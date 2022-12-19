@@ -10,15 +10,15 @@ public class PlayerController : MonoBehaviour
     InputMaster PlayerInputActions;
 
     [Header("Movement Settings")]
-    [SerializeField] private float _walkSpeed = 3f;     // Player's walk speed
-    [SerializeField] private float _sprintSpeed = 100f;   // Player's sprint speed
+    [SerializeField] private float _walkSpeed = 4f;     // Player's walk speed
+    [SerializeField] private float _sprintSpeed = 8f;   // Player's sprint speed
     [SerializeField] private float _jumpHeight = 1f;    // How high the player can jump
     [SerializeField] private float _gravity = -9.81f;   // Force of gravity applied to movement
 
     [Header("Player Movement Preferences")]
     [SerializeField] private bool _isDefaultWalking;    // Determine if player's default speed is walking or sprinting
 
-    private float _moveSpeed;     // Player's current movement speed
+    private float _moveSpeed;       // Player's current movement speed
     private Vector3 _moveDirection; // Direction player will move
     private Vector3 _velocity;      // Movement velocity
     private bool _isChangingSpeed;  // Check if player is holding key to change from walk to run or vice versa
@@ -83,7 +83,7 @@ public class PlayerController : MonoBehaviour
         if (Controller.isGrounded && _velocity.y < 0)
             _velocity.y = -2f;
 
-        // Get input for movedirection every update (actual method to move player is in fixed update for physics)
+        // Get input for movedirection every update
         Vector2 inputVec = PlayerInputActions.Player.Movement.ReadValue<Vector2>();
         _moveDirection = transform.right * inputVec.x + transform.forward * inputVec.y;
 
@@ -127,7 +127,7 @@ public class PlayerController : MonoBehaviour
     }
 
     /// <summary>
-    /// TODO: Currently does not properly change speeds.
+    /// Change MoveSpeed to walking or sprinting when player presses Left Control.
     /// </summary>
     /// <param name="context"></param>
     public void ChangeSpeed(InputAction.CallbackContext context)
@@ -135,15 +135,12 @@ public class PlayerController : MonoBehaviour
         if (context.performed && !_isChangingSpeed)
         {
             _moveSpeed = _isDefaultWalking ? _sprintSpeed : _walkSpeed;
-            _isChangingSpeed = true;
-            print($"_isChangingSpeed: {_isChangingSpeed}. _isDefaultWalking: {_isDefaultWalking}");
         }
         else if (context.performed && _isChangingSpeed)
         {
             _moveSpeed = GetDefaultMoveSpeed();
-            _isChangingSpeed = false;
-            print($"_isChangingSpeed: {_isChangingSpeed}. _isDefaultWalking: {_isDefaultWalking}");
         }
+        _isChangingSpeed = !_isChangingSpeed;
     }
 
     private float GetDefaultMoveSpeed()

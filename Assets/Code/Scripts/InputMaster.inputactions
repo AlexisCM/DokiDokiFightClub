@@ -43,12 +43,12 @@
                 },
                 {
                     "name": "ChangeSpeed",
-                    "type": "Value",
+                    "type": "Button",
                     "id": "eefe570a-23a7-47a7-b9ee-3b6a04833561",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
-                    "initialStateCheck": true
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [

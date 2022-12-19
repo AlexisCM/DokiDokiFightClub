@@ -701,8 +701,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   PlayerInput: {fileID: 626855809}
   Controller: {fileID: 626855811}
-  _walkSpeed: 3
-  _sprintSpeed: 6
+  _walkSpeed: 4
+  _sprintSpeed: 8
   _jumpHeight: 1
   _gravity: -9.81
   _isDefaultWalking: 0
@@ -1400,7 +1400,7 @@ Mesh:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: pb_Mesh24946
+  m_Name: pb_Mesh24948
   serializedVersion: 10
   m_SubMeshes:
   - serializedVersion: 2
