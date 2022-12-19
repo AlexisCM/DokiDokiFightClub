@@ -1,72 +1,91 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(CharacterController))]
 public class PlayerController : MonoBehaviour
 {
-    public CharacterController Controller;
-    public Camera PlayerCamera;
+    public PlayerInput PlayerInput;         // Handles player inputs (KMB or Gamepad)
+    public CharacterController Controller;  // Handles moving the player's body
 
-    // Movement Variables
+    InputMaster PlayerInputActions;
+
     [Header("Movement Settings")]
-    [HideInInspector] public bool CanMove = true;
-    [SerializeField] private float _walkingSpeed = 7.5f;
-    [SerializeField] private float _runningSpeed = 11.5f;
-    [SerializeField] private float _jumpSpeed = 8.0f;
-    [SerializeField] private float _gravity = 20.0f;
-    private Vector3 _moveDirection = Vector3.zero;
-    private float _rotationX = 0;
+    [SerializeField] private float _moveSpeed = 5f;     // Player's movement speed
+    [SerializeField] private float _jumpHeight = 1f;    // How high the player can jump
+    [SerializeField] private float _gravity = -9.81f;   // Force of gravity applied to movement
 
-    // Look/Camera Variables
-    [Header("Camera Settings")]
-    [SerializeField] private float _lookSpeed = 2.0f;
-    [SerializeField] private float _lookXLimit = 45.0f;
+    private Vector3 _moveDirection; // Direction player will move
+    private Vector3 _velocity;      // Movement velocity
 
-    void Start()
+    void Awake()
     {
-        Controller.GetComponent<CharacterController>();
+        PlayerInput = GetComponent<PlayerInput>();
+        Controller = GetComponent<CharacterController>();
 
-        // Lock and hide cursor
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        PlayerInputActions = new InputMaster();
+        // Attach callbacks to player input actions
+        PlayerInputActions.Player.Jump.performed += Jump;
+        PlayerInputActions.Player.Crouch.performed += Crouch;
     }
 
-    void Update()
+    private void OnEnable()
     {
-        Vector3 forward = transform.TransformDirection(Vector3.forward);
-        Vector3 right = transform.TransformDirection(Vector3.right);
+        PlayerInputActions.Player.Movement.Enable();
+        PlayerInputActions.Player.Jump.Enable();
+        PlayerInputActions.Player.Crouch.Enable();
+    }
 
-        // TODO:
-        // Account for Player Settings, which may change Left Shift to Walk instead of Run
+    private void OnDisable()
+    {
+        PlayerInputActions.Player.Movement.Disable();
+        PlayerInputActions.Player.Jump.Disable();
+        PlayerInputActions.Player.Crouch.Disable();
+    }
 
-        // Left Shift to run
-        bool isRunning = Input.GetKey(KeyCode.LeftShift);
-        float currSpeedX = CanMove ? (isRunning ? _runningSpeed : _walkingSpeed) * Input.GetAxis("Horizontal") : 0;
-        float currSpeedY = CanMove ? (isRunning ? _runningSpeed : _walkingSpeed) * Input.GetAxis("Vertical") : 0;
-        float movementDirectionY = _moveDirection.y;
-        _moveDirection = (forward * currSpeedX) + (right * currSpeedY);
+    private void Update()
+    {
+        Move();
+    }
 
-        if (Input.GetButton("Jump") && CanMove && Controller.isGrounded)
+    /// <summary>
+    /// Called on update to check for player movement inputs. Move player object accordingly.
+    /// </summary>
+    public void Move()
+    {
+        // TODO: Account for "CanMove" and LeftShift to toggle walk/sprint speeds
+
+        // Reset velocity if player is not jumping
+        if (Controller.isGrounded && _velocity.y < 0)
+            _velocity.y = -2f;
+
+        // Get input for movedirection every update (actual method to move player is in fixed update for physics)
+        Vector2 inputVec = PlayerInputActions.Player.Movement.ReadValue<Vector2>();
+        _moveDirection = transform.right * inputVec.x + transform.forward * inputVec.y;
+
+        Controller.Move(_moveDirection * _moveSpeed * Time.deltaTime);
+        _velocity.y += _gravity * Time.deltaTime;
+        Controller.Move(_velocity * Time.deltaTime);
+    }
+
+    /// <summary>
+    /// Allow player to jump on key press if they are currently on the ground.
+    /// </summary>
+    /// <param name="context">input action callback</param>
+    public void Jump(InputAction.CallbackContext context)
+    {
+        if (context.performed && Controller.isGrounded)
         {
-            _moveDirection.y = _jumpSpeed;
+            Debug.Log("jumpman jumpman jumpman jumpman--");
+            _velocity.y = Mathf.Sqrt(_jumpHeight * -3f * _gravity);
         }
-        else
+    }
+
+    public void Crouch(InputAction.CallbackContext context)
+    {
+        if (context.performed)
         {
-            _moveDirection.y = movementDirectionY;
-        }
-
-        // Apply gravity
-        if (!Controller.isGrounded)
-            _moveDirection.y -= _gravity * Time.deltaTime;
-
-        Controller.Move(_moveDirection * Time.deltaTime);
-
-        // Player and Camera rotation
-        if (CanMove)
-        {
-            _rotationX += Input.GetAxis("Mouse Y") * _lookSpeed;
-            _rotationX = Mathf.Clamp(_rotationX, -_lookXLimit, _lookXLimit);
-            PlayerCamera.transform.localRotation = Quaternion.Euler(-_rotationX, 0, 0);
-            transform.rotation *= Quaternion.Euler(0, Input.GetAxis("Mouse X") * _lookSpeed, 0);
+            // TODO
+            Debug.Log("dip dip potatah chip");
         }
     }
 }
