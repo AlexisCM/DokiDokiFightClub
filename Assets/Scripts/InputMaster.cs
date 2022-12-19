@@ -56,12 +56,21 @@ public partial class @InputMaster : IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": ""Crouch"",
-                    ""type"": ""Button"",
+                    ""type"": ""Value"",
                     ""id"": ""9eed26d7-3801-4db5-97e3-32c44a56c6e9"",
                     ""expectedControlType"": ""Button"",
                     ""processors"": """",
                     ""interactions"": """",
-                    ""initialStateCheck"": false
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""ChangeSpeed"",
+                    ""type"": ""Value"",
+                    ""id"": ""eefe570a-23a7-47a7-b9ee-3b6a04833561"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
                 }
             ],
             ""bindings"": [
@@ -156,11 +165,22 @@ public partial class @InputMaster : IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""e2bbda81-e328-45e1-95df-95ea1afced97"",
-                    ""path"": ""<Keyboard>/c"",
-                    ""interactions"": ""Press,Hold"",
+                    ""path"": ""<Keyboard>/leftCtrl"",
+                    ""interactions"": ""Press(behavior=2)"",
                     ""processors"": """",
                     ""groups"": ""KeyboardMouse"",
                     ""action"": ""Crouch"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""05cc798b-bffd-4233-9a78-d718c2c2da95"",
+                    ""path"": ""<Keyboard>/leftShift"",
+                    ""interactions"": ""Press(behavior=2)"",
+                    ""processors"": """",
+                    ""groups"": ""KeyboardMouse"",
+                    ""action"": ""ChangeSpeed"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -203,6 +223,7 @@ public partial class @InputMaster : IInputActionCollection2, IDisposable
         m_Player_Movement = m_Player.FindAction("Movement", throwIfNotFound: true);
         m_Player_Jump = m_Player.FindAction("Jump", throwIfNotFound: true);
         m_Player_Crouch = m_Player.FindAction("Crouch", throwIfNotFound: true);
+        m_Player_ChangeSpeed = m_Player.FindAction("ChangeSpeed", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -266,6 +287,7 @@ public partial class @InputMaster : IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_Movement;
     private readonly InputAction m_Player_Jump;
     private readonly InputAction m_Player_Crouch;
+    private readonly InputAction m_Player_ChangeSpeed;
     public struct PlayerActions
     {
         private @InputMaster m_Wrapper;
@@ -274,6 +296,7 @@ public partial class @InputMaster : IInputActionCollection2, IDisposable
         public InputAction @Movement => m_Wrapper.m_Player_Movement;
         public InputAction @Jump => m_Wrapper.m_Player_Jump;
         public InputAction @Crouch => m_Wrapper.m_Player_Crouch;
+        public InputAction @ChangeSpeed => m_Wrapper.m_Player_ChangeSpeed;
         public InputActionMap Get() { return m_Wrapper.m_Player; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -295,6 +318,9 @@ public partial class @InputMaster : IInputActionCollection2, IDisposable
                 @Crouch.started -= m_Wrapper.m_PlayerActionsCallbackInterface.OnCrouch;
                 @Crouch.performed -= m_Wrapper.m_PlayerActionsCallbackInterface.OnCrouch;
                 @Crouch.canceled -= m_Wrapper.m_PlayerActionsCallbackInterface.OnCrouch;
+                @ChangeSpeed.started -= m_Wrapper.m_PlayerActionsCallbackInterface.OnChangeSpeed;
+                @ChangeSpeed.performed -= m_Wrapper.m_PlayerActionsCallbackInterface.OnChangeSpeed;
+                @ChangeSpeed.canceled -= m_Wrapper.m_PlayerActionsCallbackInterface.OnChangeSpeed;
             }
             m_Wrapper.m_PlayerActionsCallbackInterface = instance;
             if (instance != null)
@@ -311,6 +337,9 @@ public partial class @InputMaster : IInputActionCollection2, IDisposable
                 @Crouch.started += instance.OnCrouch;
                 @Crouch.performed += instance.OnCrouch;
                 @Crouch.canceled += instance.OnCrouch;
+                @ChangeSpeed.started += instance.OnChangeSpeed;
+                @ChangeSpeed.performed += instance.OnChangeSpeed;
+                @ChangeSpeed.canceled += instance.OnChangeSpeed;
             }
         }
     }
@@ -339,5 +368,6 @@ public partial class @InputMaster : IInputActionCollection2, IDisposable
         void OnMovement(InputAction.CallbackContext context);
         void OnJump(InputAction.CallbackContext context);
         void OnCrouch(InputAction.CallbackContext context);
+        void OnChangeSpeed(InputAction.CallbackContext context);
     }
 }

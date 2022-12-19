@@ -10,12 +10,22 @@ public class PlayerController : MonoBehaviour
     InputMaster PlayerInputActions;
 
     [Header("Movement Settings")]
-    [SerializeField] private float _moveSpeed = 5f;     // Player's movement speed
+    [SerializeField] private float _walkSpeed = 3f;     // Player's walk speed
+    [SerializeField] private float _sprintSpeed = 100f;   // Player's sprint speed
     [SerializeField] private float _jumpHeight = 1f;    // How high the player can jump
     [SerializeField] private float _gravity = -9.81f;   // Force of gravity applied to movement
 
+    [Header("Player Movement Preferences")]
+    [SerializeField] private bool _isDefaultWalking;    // Determine if player's default speed is walking or sprinting
+
+    private float _moveSpeed;     // Player's current movement speed
     private Vector3 _moveDirection; // Direction player will move
     private Vector3 _velocity;      // Movement velocity
+    private bool _isChangingSpeed;  // Check if player is holding key to change from walk to run or vice versa
+    private bool _isCrouching;      // Check if player is crouching or nah
+
+    private Vector3 _playerCentre;  // Original centre of PlayerController
+    private float _playerHeight;    // Original height of PlayerController
 
     void Awake()
     {
@@ -26,6 +36,19 @@ public class PlayerController : MonoBehaviour
         // Attach callbacks to player input actions
         PlayerInputActions.Player.Jump.performed += Jump;
         PlayerInputActions.Player.Crouch.performed += Crouch;
+        PlayerInputActions.Player.ChangeSpeed.performed += ChangeSpeed;
+    }
+
+    private void Start()
+    {
+        _playerHeight = Controller.height;
+        _playerCentre = Controller.center;
+        _isCrouching = false;
+        _isChangingSpeed = false;
+
+        // TODO: Handle stored player preferences for default speed (walking or sprinting)
+        _isDefaultWalking = false;
+        _moveSpeed = GetDefaultMoveSpeed();
     }
 
     private void OnEnable()
@@ -33,6 +56,7 @@ public class PlayerController : MonoBehaviour
         PlayerInputActions.Player.Movement.Enable();
         PlayerInputActions.Player.Jump.Enable();
         PlayerInputActions.Player.Crouch.Enable();
+        PlayerInputActions.Player.ChangeSpeed.Enable();
     }
 
     private void OnDisable()
@@ -40,6 +64,7 @@ public class PlayerController : MonoBehaviour
         PlayerInputActions.Player.Movement.Disable();
         PlayerInputActions.Player.Jump.Disable();
         PlayerInputActions.Player.Crouch.Disable();
+        PlayerInputActions.Player.ChangeSpeed.Disable();
     }
 
     private void Update()
@@ -82,10 +107,47 @@ public class PlayerController : MonoBehaviour
 
     public void Crouch(InputAction.CallbackContext context)
     {
-        if (context.performed)
+        if (context.performed && !_isCrouching)
         {
-            // TODO
             Debug.Log("dip dip potatah chip");
+            Controller.center = new Vector3(0f, Controller.center.y * 0.5f, 0f);
+            Controller.height = _playerHeight * 0.5f;
+            _moveSpeed = _walkSpeed;
+            _isCrouching = true;
         }
+        else if (context.performed && _isCrouching)
+        {
+            Debug.Log("undip");
+            // TODO: Handle if player tries to un-crouch when below an object shorter than their standing height
+            Controller.center = _playerCentre;
+            Controller.height = _playerHeight;
+            _moveSpeed = GetDefaultMoveSpeed();
+            _isCrouching = false;
+        }
+    }
+
+    /// <summary>
+    /// TODO: Currently does not properly change speeds.
+    /// </summary>
+    /// <param name="context"></param>
+    public void ChangeSpeed(InputAction.CallbackContext context)
+    {
+        if (context.performed && !_isChangingSpeed)
+        {
+            _moveSpeed = _isDefaultWalking ? _sprintSpeed : _walkSpeed;
+            _isChangingSpeed = true;
+            print($"_isChangingSpeed: {_isChangingSpeed}. _isDefaultWalking: {_isDefaultWalking}");
+        }
+        else if (context.performed && _isChangingSpeed)
+        {
+            _moveSpeed = GetDefaultMoveSpeed();
+            _isChangingSpeed = false;
+            print($"_isChangingSpeed: {_isChangingSpeed}. _isDefaultWalking: {_isDefaultWalking}");
+        }
+    }
+
+    private float GetDefaultMoveSpeed()
+    {
+        return _isDefaultWalking ? _walkSpeed : _sprintSpeed;
     }
 }

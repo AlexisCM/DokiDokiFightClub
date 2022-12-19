@@ -636,7 +636,7 @@ MonoBehaviour:
     m_ActionName: Player/Movement[/Keyboard/w,/Keyboard/s,/Keyboard/a,/Keyboard/d,/Keyboard/leftShift,/Keyboard/c]
   - m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
+      - m_Target: {fileID: 626855810}
         m_TargetAssemblyTypeName: PlayerController, Assembly-CSharp
         m_MethodName: Jump
         m_Mode: 0
@@ -652,7 +652,7 @@ MonoBehaviour:
     m_ActionName: Player/Jump[/Keyboard/space]
   - m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
+      - m_Target: {fileID: 626855810}
         m_TargetAssemblyTypeName: PlayerController, Assembly-CSharp
         m_MethodName: Crouch
         m_Mode: 0
@@ -666,6 +666,22 @@ MonoBehaviour:
         m_CallState: 2
     m_ActionId: 9eed26d7-3801-4db5-97e3-32c44a56c6e9
     m_ActionName: Player/Crouch[/Keyboard/c]
+  - m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 626855810}
+        m_TargetAssemblyTypeName: PlayerController, Assembly-CSharp
+        m_MethodName: ChangeSpeed
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+    m_ActionId: eefe570a-23a7-47a7-b9ee-3b6a04833561
+    m_ActionName: Player/ChangeSpeed[/Keyboard/leftShift]
   m_NeverAutoSwitchControlSchemes: 0
   m_DefaultControlScheme: KeyboardMouse
   m_DefaultActionMap: Player
@@ -685,13 +701,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   PlayerInput: {fileID: 626855809}
   Controller: {fileID: 626855811}
-  _moveSpeed: 5
-  _gravity: -9.81
+  _walkSpeed: 3
+  _sprintSpeed: 6
   _jumpHeight: 1
-  _playerHeight: 2
-  _groundMask:
-    serializedVersion: 2
-    m_Bits: 64
+  _gravity: -9.81
+  _isDefaultWalking: 0
 --- !u!143 &626855811
 CharacterController:
   m_ObjectHideFlags: 0
