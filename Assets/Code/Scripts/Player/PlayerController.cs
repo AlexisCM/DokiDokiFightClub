@@ -1,6 +1,9 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+/// <summary>
+/// Handles Player movement based on input.
+/// </summary>
 [RequireComponent(typeof(CharacterController))]
 public class PlayerController : MonoBehaviour
 {
@@ -27,7 +30,7 @@ public class PlayerController : MonoBehaviour
     private Vector3 _playerCentre;  // Original centre of PlayerController
     private float _playerHeight;    // Original height of PlayerController
 
-    void Awake()
+    private void Awake()
     {
         PlayerInput = GetComponent<PlayerInput>();
         Controller = GetComponent<CharacterController>();

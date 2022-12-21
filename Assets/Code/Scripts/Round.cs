@@ -17,11 +17,12 @@ public class Round : MonoBehaviour
     public void StartRound()
     {
         IsOngoing = true;
-        StartCoroutine(StartTimer());
+        StartCoroutine("StartTimer");
     }
 
     public void ResetRound()
     {
+        StopCoroutine("StartTimer");
         CurrentTime = _maxRoundDuration;
         IsOngoing = false;
     }
