@@ -5,4 +5,4 @@ permalink: /terms-of-service/
 ---
 
 # Hello there
-## General Kenobi
+General Kenobi
