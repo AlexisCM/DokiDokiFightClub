@@ -1,7 +1,7 @@
 ---
 layout: page
 title: The Game
-permalink: /ddfc-game/
+permalink: /auth/ddfc-game/
 ---
 
 This page will (eventually) take you back to the game.
