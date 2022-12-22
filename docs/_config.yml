@@ -20,10 +20,7 @@
 
 title: Doki Doki Fight Club
 description: >- # this means to ignore newlines until "baseurl:"
-  Doki Doki Fight Clubis a 3D online game in which players are against
-  one another in a 1v1 fight to the death. DDFC uses Fitbit smartwaches 
-  to monitor player heart rates, which are translated into heartbeat 
-  sound effects that the enemy can hear if they are in proximity.
+  A website for a game.
 baseurl: "/DokiDokiFightClub/" # the subpath of your site, e.g. /blog
 domain: alexiscm.github.io
 url: "https://alexiscm.github.io" # the base hostname & protocol for your site, e.g. http://example.com
