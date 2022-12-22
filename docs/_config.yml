@@ -20,13 +20,14 @@
 
 title: Doki Doki Fight Club
 description: >- # this means to ignore newlines until "baseurl:"
-  Write an awesome description for your new site here. You can edit this
-  line in _config.yml. It will appear in your document head meta (for
-  Google search results) and in your feed.xml site description.
+  Doki Doki Fight Clubis a 3D online game in which players are against
+  one another in a 1v1 fight to the death. DDFC uses Fitbit smartwaches 
+  to monitor player heart rates, which are translated into heartbeat 
+  sound effects that the enemy can hear if they are in proximity.
 baseurl: "/DokiDokiFightClub/" # the subpath of your site, e.g. /blog
 domain: alexiscm.github.io
 url: "https://alexiscm.github.io" # the base hostname & protocol for your site, e.g. http://example.com
-github_username:  jekyll
+github_username:  AlexisCM
 
 # Build settings
 theme: minima
