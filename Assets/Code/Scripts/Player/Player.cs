@@ -1,11 +1,9 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class Player : MonoBehaviour
+public class Player : Entity
 {
     public PlayerInput PlayerInput; // Handles player inputs (KMB or Gamepad)
-
-    public HealthMetre HealthMetre; // Reference to player's max and current health
     public Weapon ActiveWeapon;     // Player's active weapon
 
     InputMaster _playerInputActions; // Reference to Player inputs for attacking
@@ -37,6 +35,7 @@ public class Player : MonoBehaviour
         // Play attack animation
         // Check if weapon collides with an enemy
         Debug.Log("Quick attack!");
+        ActiveWeapon.QuickAttack();
     }
 
     public void HeavyAttack(InputAction.CallbackContext context)
@@ -46,23 +45,10 @@ public class Player : MonoBehaviour
         Debug.Log("HEAVY attack!");
     }
 
-    public void TakeDamage(int damage)
+    public override void Die()
     {
-        HealthMetre.CurrentHealth -= damage;
-        Debug.Log($"Took {damage} dmg! Health is now {HealthMetre.CurrentHealth}");
-        if (HealthMetre.CurrentHealth <= 0)
-            Die();
-    }
-
-    public void Die()
-    {
+        base.Die();
         // Notify GameManager that the player died, so the round can end
         GameManager.Instance.PlayerDeath(gameObject);
-    }
-
-    public void ResetState()
-    {
-        HealthMetre.Reset();
-        // TODO: Reset location
     }
 }
