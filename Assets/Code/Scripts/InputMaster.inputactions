@@ -6,9 +6,18 @@
             "id": "7ae44bd4-b53d-4d0f-b4dc-bf8b9a1f753d",
             "actions": [
                 {
-                    "name": "Attack",
+                    "name": "QuickAttack",
                     "type": "Button",
                     "id": "c28a8645-f65b-48c8-a8fb-711fad1957b3",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "HeavyAttack",
+                    "type": "Button",
+                    "id": "1fdd9625-bca9-4dc8-89ce-00586efeffa9",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
@@ -56,21 +65,10 @@
                     "name": "",
                     "id": "e0366758-fc81-47f8-8d2f-8895221b53b7",
                     "path": "<Mouse>/leftButton",
-                    "interactions": "",
+                    "interactions": "Press",
                     "processors": "",
                     "groups": "KeyboardMouse",
-                    "action": "Attack",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "a0940979-ca46-47ab-ad4b-8926f5b3346a",
-                    "path": "<Mouse>/rightButton",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "KeyboardMouse",
-                    "action": "Attack",
+                    "action": "QuickAttack",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -159,6 +157,17 @@
                     "processors": "",
                     "groups": "KeyboardMouse",
                     "action": "ChangeSpeed",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "9ac9226b-77eb-47f5-8449-007346300fc4",
+                    "path": "<Mouse>/rightButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "KeyboardMouse",
+                    "action": "HeavyAttack",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

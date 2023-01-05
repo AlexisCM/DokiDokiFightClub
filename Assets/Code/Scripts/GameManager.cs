@@ -5,6 +5,8 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; } // Singleton instance
 
+    public GameObject[] Players; // List of players
+
     internal Round Round { get; private set; } // Keeps track of current round's state
 
     private const int _maxRounds = 3;   // Maximum number of rounds played per match
@@ -23,11 +25,19 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         Debug.Log("Game started");
+
+        // Get all player objects
+        Players = GameObject.FindGameObjectsWithTag("Player");
+
         Round.StartRound();
     }
 
     void Update()
     {
+        // TESTING ONLY! APPLIES DMG TO PLAYER. REMOVE LATER:
+        if (Input.GetKeyDown(KeyCode.V))
+            Players[0].GetComponent<Player>().TakeDamage(50);
+
         // Check if round ended
         if (Round.CurrentTime <= 0)
         {
@@ -50,6 +60,11 @@ public class GameManager : MonoBehaviour
         ++_roundsPlayed;
         // TODO: Handle players swapping sides of the map after rounds
 
+        foreach (GameObject player in Players)
+        {
+            player.GetComponent<Player>().ResetState();
+        }
+
         Round.ResetRound();
     }
 
@@ -60,5 +75,12 @@ public class GameManager : MonoBehaviour
         StopAllCoroutines();
         // Transition player to match summary scene
         SceneManager.LoadScene("MenuScene");
+    }
+
+    public void PlayerDeath(GameObject deadPlayer)
+    {
+        Debug.Log($"{deadPlayer.name} DIED and lost the round!");
+        // TODO: Update player scores
+        RoundEnded();
     }
 }
