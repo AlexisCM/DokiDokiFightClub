@@ -16,9 +16,8 @@ public class Weapon : MonoBehaviour
         // TODO: Add attack speed delay. Coroutine?
 
         Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
-        RaycastHit hit;
 
-        if (Physics.Raycast(ray, out hit) && hit.transform.tag == "Enemy")
+        if (Physics.Raycast(ray, out RaycastHit hit) && hit.transform.CompareTag("Enemy"))
         {
                 Entity enemy = hit.transform.gameObject.GetComponent<Entity>();
                 enemy.TakeDamage(BaseDamage);
