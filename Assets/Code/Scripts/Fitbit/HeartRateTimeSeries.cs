@@ -1,5 +1,5 @@
-using Newtonsoft.Json;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 /// <summary>
 /// Root of the response from GET request to Fitbit's "Heart Rate Time Series by Date".

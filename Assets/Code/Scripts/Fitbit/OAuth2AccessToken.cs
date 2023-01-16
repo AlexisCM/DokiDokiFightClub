@@ -1,10 +1,13 @@
+using System;
+
 /// <summary>
 /// Object to represent JSON data returned from Fitbit authorization request.
 /// </summary>
 [System.Serializable]
 public class OAuth2AccessToken
 {
-    public string user_id;          // User id
+    // JSON Properties
+    public string user_id;          // User id of signed-in user
     public string token_type;       // Usually set to "Bearer"
     public string access_token;     // The token granting access for api requests
     public int expires_in;          // In seconds; the time it takes for the token to expire

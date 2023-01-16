@@ -1,6 +1,6 @@
-using Newtonsoft.Json;
 using System;
 using System.Collections;
+using Newtonsoft.Json;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -28,8 +28,16 @@ public class FitbitApi : MonoBehaviour
     private string _returnCode; // The code returned from API after successful call
 
     // Event Handlers
-    public Action<OAuth2AccessToken> OnRequestSuccess;
-    public Action<HeartRateTimeSeries> OnGetHeartRateSuccess;
+    private Action _onRequestCompletion;
+    private Action<HeartRateTimeSeries> _onGetHeartRateSuccess;
+
+    private OAuth2AccessToken _oAuth2;  // Represents JSON data returned from Fitbit auth request
+
+    private void Awake()
+    {
+        // Subscribe methods to event handlers
+        _onGetHeartRateSuccess += FetchedDataHandler;
+    }
 
     // Start is called before the first frame update
     void Start()
@@ -45,41 +53,33 @@ public class FitbitApi : MonoBehaviour
 
     public void LoginToFitbit()
     {
-        AuthorizeFitbitUser();
         // Check if the user has a refresh token stored in PlayerPrefs
-        //if (PlayerPrefs.HasKey("FitbitRefreshToken"))
-        //{
-        //    UseRefreshToken();
-        //}
-        //else
-        //{
-        //    AuthorizeFitbitUser();
-        //}
+        if (PlayerPrefs.HasKey("FitbitRefreshToken"))
+        {
+            UseRefreshToken();
+        }
+        else
+        {
+            AuthorizeFitbitUser();
+        }
     }
 
-    public void UseRefreshToken()
-    {
-        string refreshToken = PlayerPrefs.GetString("FitbitRefreshToken");
-    }
-
+    /// <summary>
+    /// Direct user to the browser, where they must login to fitbit account and authorize use of data.
+    /// </summary>
     public void AuthorizeFitbitUser()
     {
         var authorizationUrl = $"{_oAuth2Url}&client_id={_clientId}&response_type=code&code_challenge={_codeChallenge}&" +
             $"code_challenge_method={_codeChallMethod}&state={_state}&scope={_scopeParams}&redirect_uri={_callbackUrl}";
-        //var authorizationUrl = $"{_oAuth2Uri}&client_id={_clientId}&response_type=code&scope={_scopeParams}&redirect_uri={_callbackUrl}";
 
         Application.OpenURL(authorizationUrl);
     }
 
-    public void GetData()
-    {
-    }
-
-    public void UseReturnCode()
+    public void GetTokensWithReturnCode()
     {
         // Get user-inputted return code from input field
-        GameObject returnCodeObj = GameObject.Find("Canvas/CodeEntryField");
-        TMP_InputField returnCodeInput = returnCodeObj.GetComponent<TMP_InputField>();
+        var returnCodeObj = GameObject.Find("Canvas/CodeEntryField");
+        var returnCodeInput = returnCodeObj.GetComponent<TMP_InputField>();
         _returnCode = returnCodeInput.text.ToString();
 
         // Create request body
@@ -95,9 +95,22 @@ public class FitbitApi : MonoBehaviour
         request.SetRequestHeader("authorization", "Basic " + EncodeBasicToken());
 
         StartCoroutine(WaitForRequest(request));
+    }
 
-        // TODO: Handle access/refresh token, get user data.
-        OnRequestSuccess += ReturnCodeHandler;
+    public void UseRefreshToken()
+    {
+        var refreshToken = PlayerPrefs.GetString("FitbitRefreshToken");
+
+        // Create request body
+        var form = new WWWForm();
+        form.AddField("grant_type", "refresh_token");
+        form.AddField("refresh_token", refreshToken);
+
+        // Set request headers
+        var request = UnityWebRequest.Post(_tokenUrl, form);
+        request.SetRequestHeader("authorization", "Basic " + EncodeBasicToken());
+
+        StartCoroutine(WaitForRefreshTokenRequest(request));
     }
 
     IEnumerator WaitForRequest(UnityWebRequest req)
@@ -110,12 +123,11 @@ public class FitbitApi : MonoBehaviour
         }
         else
         {
-            OAuth2AccessToken accessToken = JsonUtility.FromJson<OAuth2AccessToken>(req.downloadHandler.text);
-            Debug.Log(req.downloadHandler.text);
-            // Perform callback on success through delegate
-            //if (OnRequestSuccess != null)
-            //    OnRequestSuccess(accessToken);
-            OnRequestSuccess.Invoke(accessToken);
+            _oAuth2 = JsonUtility.FromJson<OAuth2AccessToken>(req.downloadHandler.text);
+            // Perform callback on success
+            _onRequestCompletion += TokensHandler;
+            _onRequestCompletion.Invoke();
+            _onRequestCompletion = null;
         }
     }
 
@@ -130,42 +142,55 @@ public class FitbitApi : MonoBehaviour
         else
         {
             HeartRateTimeSeries hrData = JsonConvert.DeserializeObject<HeartRateTimeSeries>(req.downloadHandler.text);
-            OnGetHeartRateSuccess.Invoke(hrData);
+            _onGetHeartRateSuccess.Invoke(hrData);
         }
     }
 
-    private void GetAllData()
+    IEnumerator WaitForRefreshTokenRequest(UnityWebRequest req)
     {
-        GetHeartRateData();
+        yield return req.SendWebRequest();
+        
+        
+        if (req.result != UnityWebRequest.Result.Success)
+        {
+            // Something went wrong with the request
+            if (req.responseCode != 401)
+                Debug.Log($"REQUEST FAILED: {req.error}\n{req.downloadHandler.text}");
+
+            // Refresh token didn't exist or has expired
+            PlayerPrefs.DeleteKey("FitbitRefreshToken");
+            _onRequestCompletion += AuthorizeFitbitUser;
+            _onRequestCompletion.Invoke(); // Call AuthorizeFitbitUser to generate new tokens
+            _onRequestCompletion = null;
+        }
+        else
+        {
+            // Request succeeded with refresh token
+            _oAuth2 = JsonUtility.FromJson<OAuth2AccessToken>(req.downloadHandler.text);
+            _onRequestCompletion += TokensHandler;
+            _onRequestCompletion.Invoke();
+            _onRequestCompletion = null;
+        }
     }
 
     private void GetHeartRateData()
     {
-        string authToken = "Bearer " + PlayerPrefs.GetString("FitbitAccessToken");
+        var authToken = "Bearer " + PlayerPrefs.GetString("FitbitAccessToken");
         var request = UnityWebRequest.Get(_heartRateUrl);
         request.SetRequestHeader("authorization", authToken);
 
-        OnGetHeartRateSuccess += FetchedDataHandler;
         StartCoroutine(WaitForHeartRateData(request));
     }
 
-    private void ReturnCodeHandler(OAuth2AccessToken oAuth2Obj)
+    private void TokensHandler()
     {
         // Store Fitbit API tokens
-        PlayerPrefs.SetString("FitbitAccessToken", oAuth2Obj.access_token);
-        PlayerPrefs.SetString("FitbitRefreshToken", oAuth2Obj.refresh_token);
-        PlayerPrefs.SetString("FitbitTokenType", oAuth2Obj.token_type);
-        PlayerPrefs.SetInt("FitbitExpiresIn", oAuth2Obj.expires_in);
+        PlayerPrefs.SetString("FitbitAccessToken", _oAuth2.access_token);
+        PlayerPrefs.SetString("FitbitRefreshToken", _oAuth2.refresh_token);
+        PlayerPrefs.SetString("FitbitTokenType", _oAuth2.token_type);
+        PlayerPrefs.SetInt("FitbitExpiresIn", _oAuth2.expires_in);
 
-        GetAllData();
-
-        // Unsubscribe method from eventhandler once work is finished
-        OnRequestSuccess -= ReturnCodeHandler;
-    }
-
-    private void RefreshTokenHandler()
-    {
-
+        GetHeartRateData();
     }
 
     private void FetchedDataHandler(HeartRateTimeSeries hrData)
