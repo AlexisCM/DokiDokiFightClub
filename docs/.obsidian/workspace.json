@@ -4,19 +4,15 @@
     "type": "split",
     "children": [
       {
-        "id": "b5f02e60d04f98a5",
+        "id": "c58b7e3607965ae1",
         "type": "tabs",
         "children": [
           {
-            "id": "c5da90ae65f83a14",
+            "id": "2f53eee83c18df65",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "contact.md",
-                "mode": "source",
-                "source": false
-              }
+              "type": "empty",
+              "state": {}
             }
           }
         ]
@@ -85,7 +81,6 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "contact.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -102,7 +97,6 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "contact.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -124,9 +118,7 @@
             "type": "leaf",
             "state": {
               "type": "outline",
-              "state": {
-                "file": "contact.md"
-              }
+              "state": {}
             }
           }
         ]
@@ -146,13 +138,13 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "c5da90ae65f83a14",
+  "active": "2f53eee83c18df65",
   "lastOpenFiles": [
+    "terms-of-service.md",
+    "contact.md",
     "privacy-policy.md",
     "index.md",
-    "contact.md",
     "about.md",
-    "terms-of-service.md",
     "ddfc-game.md"
   ]
 }
