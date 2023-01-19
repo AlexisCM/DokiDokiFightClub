@@ -13,8 +13,10 @@ public class FitbitApi : MonoBehaviour
     // URLs
     private const string _tokenUrl = "https://api.fitbit.com/oauth2/token";
     private const string _oAuth2Url = "https://www.fitbit.com/oauth2/authorize?";   // Url to request user auth from Fitbit API
-    private const string _heartRateUrl = "https://api.fitbit.com/1/user/-/activities/heart/date/today/1d.json";
     private const string _callbackUrl = "https%3A%2F%2Falexiscm.github.io%2FDokiDokiFightClub%2Fauth%2Fddfc-game%2F";
+    // Base URL to access Intraday Heart Rate Data. Must concatenate "{0}/{1}.json", where {0} and {1} represent the data's timespan.
+    private const string _baseHeartRateUrl = "https://api.fitbit.com/1/user/-/activities/heart/date/today/today/1sec/time/";
+
 
     // URI arguments
     private const string _codeChallMethod = "S256";
@@ -29,7 +31,7 @@ public class FitbitApi : MonoBehaviour
 
     // Event Handlers
     private Action _onRequestCompletion;
-    private Action<HeartRateTimeSeries> _onGetHeartRateSuccess;
+    private Action<FitbitHeartRateData> _onGetHeartRateSuccess;
 
     private OAuth2AccessToken _oAuth2;  // Represents JSON data returned from Fitbit auth request
 
@@ -141,7 +143,8 @@ public class FitbitApi : MonoBehaviour
         }
         else
         {
-            HeartRateTimeSeries hrData = JsonConvert.DeserializeObject<HeartRateTimeSeries>(req.downloadHandler.text);
+            FitbitHeartRateData hrData = JsonConvert.DeserializeObject<FitbitHeartRateData>(req.downloadHandler.text);
+            Debug.Log(req.downloadHandler.text);
             _onGetHeartRateSuccess.Invoke(hrData);
         }
     }
@@ -176,7 +179,8 @@ public class FitbitApi : MonoBehaviour
     private void GetHeartRateData()
     {
         var authToken = "Bearer " + PlayerPrefs.GetString("FitbitAccessToken");
-        var request = UnityWebRequest.Get(_heartRateUrl);
+        var request = UnityWebRequest.Get(GetHeartRateIntradayUrl());
+        //var request = UnityWebRequest.Get(_baseHeartRateUrl);
         request.SetRequestHeader("authorization", authToken);
 
         StartCoroutine(WaitForHeartRateData(request));
@@ -193,7 +197,7 @@ public class FitbitApi : MonoBehaviour
         GetHeartRateData();
     }
 
-    private void FetchedDataHandler(HeartRateTimeSeries hrData)
+    private void FetchedDataHandler(FitbitHeartRateData hrData)
     {
         Debug.Log(hrData.ToString());
     }
@@ -207,5 +211,18 @@ public class FitbitApi : MonoBehaviour
     {
         byte[] plainTextBytesToken = System.Text.Encoding.UTF8.GetBytes($"{_clientId}:{_clientSecret}");
         return Convert.ToBase64String(plainTextBytesToken);
+    }
+
+    /// <summary>
+    /// Return the 
+    /// </summary>
+    /// <param name="timespan">Time interval</param>
+    /// <returns>Complete, formatted URL</returns>
+    private string GetHeartRateIntradayUrl()
+    {
+        var now = DateTime.Now.AddMinutes(-1.0);
+        var endTime = now;
+        var startTime = now.AddMinutes(-2.0); // Data should be retrieved from within the last minute
+        return $"{_baseHeartRateUrl}{startTime:HH:mm}/{endTime:HH:mm}.json";
     }
 }
