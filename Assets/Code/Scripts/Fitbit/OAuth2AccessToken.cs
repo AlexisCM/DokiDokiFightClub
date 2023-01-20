@@ -1,5 +1,3 @@
-using System;
-
 /// <summary>
 /// Object to represent JSON data returned from Fitbit authorization request.
 /// </summary>
