@@ -1,14 +1,16 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Mirror;
 
 /// <summary>
 /// Handles Player movement based on input.
 /// </summary>
 [RequireComponent(typeof(CharacterController))]
-public class PlayerController : MonoBehaviour
+public class PlayerController : NetworkBehaviour
 {
     public PlayerInput PlayerInput;         // Handles player inputs (KMB or Gamepad)
     public CharacterController Controller;  // Handles moving the player's body
+    public Transform CameraTransform;       // The transform to control the player camera's rotation
 
     InputMaster PlayerInputActions;
 
@@ -33,17 +35,28 @@ public class PlayerController : MonoBehaviour
     private void Awake()
     {
         PlayerInput = GetComponent<PlayerInput>();
-        Controller = GetComponent<CharacterController>();
-
         PlayerInputActions = new InputMaster();
+
         // Attach callbacks to player input actions
         PlayerInputActions.Player.Jump.performed += Jump;
         PlayerInputActions.Player.Crouch.performed += Crouch;
         PlayerInputActions.Player.ChangeSpeed.performed += ChangeSpeed;
     }
 
-    private void Start()
+    private void OnValidate()
     {
+        if (Controller == null)
+            Controller = GetComponent<CharacterController>();
+
+        Controller.enabled = false;
+        GetComponent<Rigidbody>().isKinematic = true;
+        GetComponent<NetworkTransform>().syncDirection = SyncDirection.ClientToServer;
+    }
+
+    public override void OnStartLocalPlayer()
+    {
+        Controller.enabled = true;
+
         _playerHeight = Controller.height;
         _playerCentre = Controller.center;
         _isCrouching = false;
@@ -72,6 +85,8 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
+        if (!isLocalPlayer)
+            return;
         Move();
     }
 

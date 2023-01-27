@@ -1,10 +1,12 @@
+using Mirror;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class GameManager : MonoBehaviour
+public class GameManager : NetworkManager
 {
     public static GameManager Instance { get; private set; } // Singleton instance
 
+    [Header("Game Manager Settings")]
     public GameObject[] Players; // List of players
 
     internal Round Round { get; private set; } // Keeps track of current round's state
@@ -12,8 +14,10 @@ public class GameManager : MonoBehaviour
     private const int _maxRounds = 3;   // Maximum number of rounds played per match
     private int _roundsPlayed = 0;      // Current number of rounds played/completed
 
-    private void Awake()
+    public override void Awake()
     {
+        base.Awake();
+
         if (Instance != null && Instance != this)
             Destroy(this.gameObject);
         else
@@ -22,8 +26,9 @@ public class GameManager : MonoBehaviour
         Round = GetComponent<Round>();
     }
 
-    void Start()
+    public override void Start()
     {
+        base.Start();
         Debug.Log("Game started");
 
         // Get all player objects
@@ -32,8 +37,9 @@ public class GameManager : MonoBehaviour
         Round.StartRound();
     }
 
-    void Update()
+    public override void Update()
     {
+        base.Update();
         // TESTING ONLY! APPLIES DMG TO PLAYER. REMOVE LATER:
         if (Input.GetKeyDown(KeyCode.V))
             Players[0].GetComponent<Player>().TakeDamage(50);
@@ -74,6 +80,7 @@ public class GameManager : MonoBehaviour
         // TODO: Determine the match winner
         StopAllCoroutines();
         // Transition player to match summary scene
+        Cursor.lockState = CursorLockMode.None;
         SceneManager.LoadScene("MenuScene");
     }
 
