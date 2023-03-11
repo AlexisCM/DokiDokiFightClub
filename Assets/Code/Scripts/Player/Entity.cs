@@ -1,25 +1,29 @@
 using UnityEngine;
+using Mirror;
 
-public class Entity : MonoBehaviour
+namespace DokiDokiFightClub
 {
-
-    public HealthMetre HealthMetre; // Reference to entity's max and current health
-
-    public void TakeDamage(int damage)
+    public class Entity : NetworkBehaviour
     {
-        HealthMetre.CurrentHealth -= damage;
-        Debug.Log($"{this.name} took {damage} dmg! Health is now {HealthMetre.CurrentHealth}");
-        if (HealthMetre.CurrentHealth <= 0)
-            Die();
-    }
 
-    public virtual void Die()
-    {
-    }
+        public HealthMetre HealthMetre; // Reference to entity's max and current health
 
-    public void ResetState()
-    {
-        HealthMetre.Reset();
-        // TODO: Reset location
+        public void TakeDamage(int damage)
+        {
+            HealthMetre.CurrentHealth -= damage;
+            Debug.Log($"{this.name} took {damage} dmg! Health is now {HealthMetre.CurrentHealth}");
+            if (HealthMetre.CurrentHealth <= 0)
+                Die();
+        }
+
+        public virtual void Die()
+        {
+        }
+
+        public void ResetState()
+        {
+            HealthMetre.Reset();
+            // TODO: Reset location
+        }
     }
 }

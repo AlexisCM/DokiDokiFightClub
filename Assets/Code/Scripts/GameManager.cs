@@ -2,92 +2,95 @@ using Mirror;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class GameManager : NetworkManager
+namespace DokiDokiFightClub
 {
-    public static GameManager Instance { get; private set; } // Singleton instance
-
-    [Header("Game Manager Settings")]
-    public GameObject[] Players; // List of players
-
-    internal Round Round { get; private set; } // Keeps track of current round's state
-
-    private const int _maxRounds = 3;   // Maximum number of rounds played per match
-    private int _roundsPlayed = 0;      // Current number of rounds played/completed
-
-    public override void Awake()
+    public class GameManager : NetworkManager
     {
-        base.Awake();
+        public static GameManager Instance { get; private set; } // Singleton instance
 
-        if (Instance != null && Instance != this)
-            Destroy(this.gameObject);
-        else
-            Instance = this;
+        [Header("Game Manager Settings")]
+        public GameObject[] Players; // List of players
 
-        Round = GetComponent<Round>();
-    }
+        internal Round Round { get; private set; } // Keeps track of current round's state
 
-    public override void Start()
-    {
-        base.Start();
-        Debug.Log("Game started");
+        private const int _maxRounds = 3;   // Maximum number of rounds played per match
+        private int _roundsPlayed = 0;      // Current number of rounds played/completed
 
-        // Get all player objects
-        Players = GameObject.FindGameObjectsWithTag("Player");
-
-        Round.StartRound();
-    }
-
-    public override void Update()
-    {
-        base.Update();
-        // TESTING ONLY! APPLIES DMG TO PLAYER. REMOVE LATER:
-        if (Input.GetKeyDown(KeyCode.V))
-            Players[0].GetComponent<Player>().TakeDamage(50);
-
-        // Check if round ended
-        if (Round.CurrentTime <= 0)
+        public override void Awake()
         {
-            RoundEnded();
+            base.Awake();
+
+            if (Instance != null && Instance != this)
+                Destroy(this.gameObject);
+            else
+                Instance = this;
+
+            Round = GetComponent<Round>();
         }
 
-        if (!Round.IsOngoing && _roundsPlayed < _maxRounds)
+        public override void Start()
         {
-            Debug.Log($"Rounds Played: {_roundsPlayed}");
+            base.Start();
+            Debug.Log("Game started");
+
+            // Get all player objects
+            Players = GameObject.FindGameObjectsWithTag("Player");
+
             Round.StartRound();
         }
-        else if (!Round.IsOngoing && _roundsPlayed == _maxRounds)
+
+        public override void Update()
         {
-            GameOver();
+            base.Update();
+            // TESTING ONLY! APPLIES DMG TO PLAYER. REMOVE LATER:
+            if (Input.GetKeyDown(KeyCode.V))
+                Players[0].GetComponent<Player>().TakeDamage(50);
+
+            // Check if round ended
+            if (Round.CurrentTime <= 0)
+            {
+                RoundEnded();
+            }
+
+            if (!Round.IsOngoing && _roundsPlayed < _maxRounds)
+            {
+                Debug.Log($"Rounds Played: {_roundsPlayed}");
+                Round.StartRound();
+            }
+            else if (!Round.IsOngoing && _roundsPlayed == _maxRounds)
+            {
+                GameOver();
+            }
         }
-    }
 
-    private void RoundEnded()
-    {
-        ++_roundsPlayed;
-        // TODO: Handle players swapping sides of the map after rounds
-
-        foreach (GameObject player in Players)
+        private void RoundEnded()
         {
-            player.GetComponent<Player>().ResetState();
+            ++_roundsPlayed;
+            // TODO: Handle players swapping sides of the map after rounds
+
+            foreach (GameObject player in Players)
+            {
+                player.GetComponent<Player>().ResetState();
+            }
+
+            Round.ResetRound();
         }
 
-        Round.ResetRound();
-    }
+        void GameOver()
+        {
+            Debug.Log("GAME OVER!");
+            // TODO: Determine the match winner
+            StopAllCoroutines();
+            // Transition player to match summary scene
+            Cursor.lockState = CursorLockMode.None;
+            SceneManager.LoadScene("MenuScene");
+        }
 
-    void GameOver()
-    {
-        Debug.Log("GAME OVER!");
-        // TODO: Determine the match winner
-        StopAllCoroutines();
-        // Transition player to match summary scene
-        Cursor.lockState = CursorLockMode.None;
-        SceneManager.LoadScene("MenuScene");
-    }
-
-    public void PlayerDeath(GameObject deadPlayer)
-    {
-        Debug.Log($"{deadPlayer.name} DIED and lost the round!");
-        // TODO: Update player scores
-        RoundEnded();
+        public void PlayerDeath(GameObject deadPlayer)
+        {
+            Debug.Log($"{deadPlayer.name} DIED and lost the round!");
+            // TODO: Update player scores
+            RoundEnded();
+        }
     }
 }
