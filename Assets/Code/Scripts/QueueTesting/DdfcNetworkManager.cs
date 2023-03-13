@@ -29,10 +29,28 @@ namespace DokiDokiFightClub
 
         public void AddPlayersToMatch(List<PlayerQueueIdentity> matchPlayers)
         {
-            //foreach (var player in matchPlayers)
-            //{
-            //    StartCoroutine(OnServerAddPlayerDelayed(player.NetConnToClient));
-            //}
+            foreach (var player in matchPlayers)
+            {
+                StartCoroutine(OnServerAddPlayerDelayed(player.connectionToClient));
+            }
+        }
+
+        /// <summary>
+        /// Replace player connection's prefab.
+        /// </summary>
+        /// <param name="conn"></param>
+        public void ReplacePlayerPrefab(NetworkConnectionToClient conn)
+        {
+            // Cache a reference to the current player object
+            GameObject oldPlayer = conn.identity.gameObject;
+
+            // Instantiate the new player object and broadcast to clients
+            // Include true for keepAuthority paramater to prevent ownership change
+            NetworkServer.ReplacePlayerForConnection(conn, Instantiate(InGamePlayerPrefab), true);
+
+            // Remove the previous player object that's now been replaced
+            // Delay is required to allow replacement to complete.
+            Destroy(oldPlayer, 0.1f);
         }
 
         #region Server System Callbacks
@@ -57,18 +75,20 @@ namespace DokiDokiFightClub
             while (!subscenesLoaded)
                 yield return null;
 
+            ReplacePlayerPrefab(conn);
+
             // Send Scene message to client to additively load the game scene
             conn.Send(new SceneMessage { sceneName = gameScene, sceneOperation = SceneOperation.LoadAdditive });
 
             // Wait for end of frame before adding the player to ensure Scene Message goes first
             yield return new WaitForEndOfFrame();
 
-            base.OnServerAddPlayer(conn);
-
             PlayerNetworkData playerNetData = conn.identity.GetComponent<PlayerNetworkData>();
             playerNetData.playerNumber = clientIndex;
             playerNetData.scoreIndex = clientIndex / subScenes.Count;
             playerNetData.matchIndex = clientIndex % subScenes.Count;
+
+            // TODO: Disable container scene's UI for clients.
 
             // Do this only on server, not on clients
             // This is what allows the NetworkSceneChecker on player and scene objects
@@ -77,6 +97,12 @@ namespace DokiDokiFightClub
                 SceneManager.MoveGameObjectToScene(conn.identity.gameObject, subScenes[clientIndex % subScenes.Count]);
 
             clientIndex++;
+        }
+
+        public override void OnServerDisconnect(NetworkConnectionToClient conn)
+        {
+            MatchMaker.Instance.RemovePlayerFromQueue(conn.identity.GetComponent<PlayerQueueIdentity>());
+            base.OnServerDisconnect(conn);
         }
 
         #endregion
