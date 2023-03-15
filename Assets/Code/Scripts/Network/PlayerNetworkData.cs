@@ -29,31 +29,6 @@ namespace DokiDokiFightClub
             if (isLocalPlayer || matchIndex == clientMatchIndex)
             {
                 GUI.Box(new Rect(10f + (scoreIndex * 110), 10f, 100f, 25f), $"P{playerNumber}: {score}");
-                var canvases = FindObjectsOfType<Canvas>();
-
-                foreach (var canvas in canvases)
-                {
-                    if (canvas.gameObject.CompareTag("LobbyUI"))
-                    {
-                        canvas.gameObject.SetActive(false);
-                    }
-                }
-                //var canvasObj = GameObject.FindGameObjectWithTag("LobbyUI");
-                //TargetDisableLobbyUI(canvasObj);
-            }
-        }
-
-        [TargetRpc]
-        void TargetDisableLobbyUI(GameObject canvasObj)
-        {
-            Debug.Log("attempting to disable lobby ui");
-            Scene lobbyScene = SceneManager.GetSceneByName("RoomScene");
-            var rootObjects = lobbyScene.GetRootGameObjects();
-            
-            foreach (var rootObj in rootObjects)
-            {
-                if (rootObj.CompareTag("LobbyUI"))
-                    canvasObj.SetActive(false);
             }
         }
     }
