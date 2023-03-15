@@ -1,54 +1,58 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class Player : Entity
+namespace DokiDokiFightClub
 {
-    public PlayerInput PlayerInput; // Handles player inputs (KMB or Gamepad)
-    public Weapon ActiveWeapon;     // Player's active weapon
-
-    InputMaster _playerInputActions; // Reference to Player inputs for attacking
-
-    private void Awake()
+    public class Player : Entity
     {
-        PlayerInput = GetComponent<PlayerInput>();
-        _playerInputActions = new InputMaster();
+        public int MatchId;
+        public PlayerInput PlayerInput; // Handles player inputs (KMB or Gamepad)
+        public Weapon ActiveWeapon;     // Player's active weapon
 
-        // Assign attack methods to inupt action callback contexts
-        _playerInputActions.Player.QuickAttack.performed += QuickAttack;
-        _playerInputActions.Player.HeavyAttack.performed += HeavyAttack;
-    }
+        InputMaster _playerInputActions; // Reference to Player inputs for attacking
 
-    private void OnEnable()
-    {
-        _playerInputActions.Player.QuickAttack.Enable();
-        _playerInputActions.Player.HeavyAttack.Enable();
-    }
+        private void Awake()
+        {
+            PlayerInput = GetComponent<PlayerInput>();
+            _playerInputActions = new InputMaster();
 
-    private void OnDisable()
-    {
-        _playerInputActions.Player.QuickAttack.Disable();
-        _playerInputActions.Player.HeavyAttack.Disable();
-    }
+            // Assign attack methods to inupt action callback contexts
+            _playerInputActions.Player.QuickAttack.performed += QuickAttack;
+            _playerInputActions.Player.HeavyAttack.performed += HeavyAttack;
+        }
 
-    public void QuickAttack(InputAction.CallbackContext context)
-    {
-        // Play attack animation
-        // Check if weapon collides with an enemy
-        Debug.Log("Quick attack!");
-        ActiveWeapon.QuickAttack();
-    }
+        private void OnEnable()
+        {
+            _playerInputActions.Player.QuickAttack.Enable();
+            _playerInputActions.Player.HeavyAttack.Enable();
+        }
 
-    public void HeavyAttack(InputAction.CallbackContext context)
-    {
-        // Play attack animation
-        // Check if weapon collides with an enemy
-        Debug.Log("HEAVY attack!");
-    }
+        private void OnDisable()
+        {
+            _playerInputActions.Player.QuickAttack.Disable();
+            _playerInputActions.Player.HeavyAttack.Disable();
+        }
 
-    public override void Die()
-    {
-        base.Die();
-        // Notify GameManager that the player died, so the round can end
-        GameManager.Instance.PlayerDeath(gameObject);
+        public void QuickAttack(InputAction.CallbackContext context)
+        {
+            // Play attack animation
+            // Check if weapon collides with an enemy
+            Debug.Log("Quick attack!");
+            ActiveWeapon.QuickAttack();
+        }
+
+        public void HeavyAttack(InputAction.CallbackContext context)
+        {
+            // Play attack animation
+            // Check if weapon collides with an enemy
+            Debug.Log("HEAVY attack!");
+        }
+
+        public override void Die()
+        {
+            base.Die();
+            // Notify GameManager that the player died, so the round can end
+            GameManager.Instance.PlayerDeath(gameObject);
+        }
     }
 }
