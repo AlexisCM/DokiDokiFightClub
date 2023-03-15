@@ -4,7 +4,7 @@ using UnityEngine.SceneManagement;
 
 namespace DokiDokiFightClub
 {
-    public class GameManager : NetworkManager
+    public class GameManager : NetworkBehaviour
     {
         public static GameManager Instance { get; private set; } // Singleton instance
 
@@ -16,9 +16,8 @@ namespace DokiDokiFightClub
         private const int _maxRounds = 3;   // Maximum number of rounds played per match
         private int _roundsPlayed = 0;      // Current number of rounds played/completed
 
-        public override void Awake()
+        public void Awake()
         {
-            base.Awake();
 
             if (Instance != null && Instance != this)
                 Destroy(this.gameObject);
@@ -28,9 +27,8 @@ namespace DokiDokiFightClub
             Round = GetComponent<Round>();
         }
 
-        public override void Start()
+        public void Start()
         {
-            base.Start();
             Debug.Log("Game started");
 
             // Get all player objects
@@ -39,9 +37,8 @@ namespace DokiDokiFightClub
             Round.StartRound();
         }
 
-        public override void Update()
+        public void Update()
         {
-            base.Update();
             // TESTING ONLY! APPLIES DMG TO PLAYER. REMOVE LATER:
             if (Input.GetKeyDown(KeyCode.V))
                 Players[0].GetComponent<Player>().TakeDamage(50);

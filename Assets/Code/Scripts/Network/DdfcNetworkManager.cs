@@ -1,198 +1,218 @@
-using System;
+using System.Collections;
+using System.Collections.Generic;
+using Mirror;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Mirror;
 
 namespace DokiDokiFightClub
 {
-    /*
-	    Documentation: https://mirror-networking.gitbook.io/docs/components/network-room-manager
-	    API Reference: https://mirror-networking.com/docs/api/Mirror.NetworkRoomManager.html
-
-	    See Also: NetworkManager
-	    Documentation: https://mirror-networking.gitbook.io/docs/components/network-manager
-	    API Reference: https://mirror-networking.com/docs/api/Mirror.NetworkManager.html
-    */
-
-    /// <summary>
-    /// This is a specialized NetworkManager that includes a networked room.
-    /// The room has slots that track the joined players, and a maximum player count that is enforced.
-    /// It requires that the NetworkRoomPlayer component be on the room player objects.
-    /// NetworkRoomManager is derived from NetworkManager, and so it implements many of the virtual functions provided by the NetworkManager class.
-    /// </summary>
-    public class DdfcNetworkManager : NetworkRoomManager
+    [AddComponentMenu("")]
+    public class DdfcNetworkManager : NetworkManager
     {
-        public static new DdfcNetworkManager singleton { get; private set; }
-        //public MatchMaker MatchMaker { get; private set; }
+        [Header("DDFC Settings")]
+        public GameObject InGamePlayerPrefab; // Prefab to load when player spawns in game scene
 
-        public override void Start()
+        [Header("MultiScene Setup")]
+        public int MatchInstances = 2; // Number of simultaneous match instances allowed
+
+        [Scene]
+        public string GameScene; // Name of game scene
+
+        [Scene]
+        public string UiScene; // Name of scene which holds UI
+
+        // This is set true after server loads all subscene instances
+        bool _subscenesLoaded;
+
+        // subscenes are added to this list as they're loaded
+        readonly List<Scene> _subScenes = new();
+
+        // Sequential index used in round-robin deployment of players into instances and score positioning
+        int _clientIndex;
+
+        /// <summary>
+        /// Called by the MatchMaker when two players are ready to be put into a match.
+        /// </summary>
+        /// <param name="matchPlayers"></param>
+        public void AddPlayersToMatch(List<PlayerQueueIdentity> matchPlayers)
         {
-            base.Start();
-            //MatchMaker = MatchMaker.Instance;
+            foreach (var player in matchPlayers)
+            {
+                StartCoroutine(OnAddPlayersToMatch(player.connectionToClient));
+            }
         }
 
         /// <summary>
-        /// TODO: Remove later. Testing only!
+        /// Replace prefab corresponding to the player's connection.
         /// </summary>
-        public void LaunchServer()
+        /// <param name="conn"></param>
+        public void ReplacePlayerPrefab(NetworkConnectionToClient conn)
         {
-            StartServer();
+            // Cache a reference to the current player object
+            GameObject oldPlayer = conn.identity.gameObject;
+
+            // Instantiate the new player object and broadcast to clients
+            // Include true for keepAuthority paramater to prevent ownership change
+            NetworkServer.ReplacePlayerForConnection(conn, Instantiate(InGamePlayerPrefab), true);
+
+            // Remove the previous player object that's now been replaced
+            // Delay is required to allow replacement to complete.
+            Destroy(oldPlayer, 0.1f);
         }
 
-        #region Server Callbacks
+        #region Server System Callbacks
 
         /// <summary>
-        /// This is called on the server when the server is started - including when a host is started.
+        /// Called on the server when a client adds a new player with NetworkClient.AddPlayer.
+        /// <para>The default implementation for this function creates a new player object from the playerPrefab.</para>
         /// </summary>
-        public override void OnRoomStartServer() { }
-
-        /// <summary>
-        /// This is called on the server when the server is stopped - including when a host is stopped.
-        /// </summary>
-        public override void OnRoomStopServer() { }
-
-        /// <summary>
-        /// This is called on the host when a host is started.
-        /// </summary>
-        public override void OnRoomStartHost() { }
-
-        /// <summary>
-        /// This is called on the host when the host is stopped.
-        /// </summary>
-        public override void OnRoomStopHost() { }
-
-        /// <summary>
-        /// This is called on the server when a new client connects to the server.
-        /// </summary>
-        /// <param name="conn">The new connection.</param>
-        public override void OnRoomServerConnect(NetworkConnectionToClient conn) { }
-
-        /// <summary>
-        /// This is called on the server when a client disconnects.
-        /// </summary>
-        /// <param name="conn">The connection that disconnected.</param>
-        public override void OnRoomServerDisconnect(NetworkConnectionToClient conn) { }
-
-        /// <summary>
-        /// This is called on the server when a networked scene finishes loading.
-        /// </summary>
-        /// <param name="sceneName">Name of the new scene.</param>
-        public override void OnRoomServerSceneChanged(string sceneName) { }
-
-        /// <summary>
-        /// This allows customization of the creation of the room-player object on the server.
-        /// <para>By default the roomPlayerPrefab is used to create the room-player, but this function allows that behaviour to be customized.</para>
-        /// </summary>
-        /// <param name="conn">The connection the player object is for.</param>
-        /// <returns>The new room-player object.</returns>
-        public override GameObject OnRoomServerCreateRoomPlayer(NetworkConnectionToClient conn)
+        /// <param name="conn">Connection from client.</param>
+        public override void OnServerAddPlayer(NetworkConnectionToClient conn)
         {
-            return base.OnRoomServerCreateRoomPlayer(conn);
+            StartCoroutine(OnServerAddPlayerDelayed(conn));
         }
 
         /// <summary>
-        /// This allows customization of the creation of the GamePlayer object on the server.
-        /// <para>By default the gamePlayerPrefab is used to create the game-player, but this function allows that behaviour to be customized.
-        /// The object returned from the function will be used to replace the room-player on the connection.</para>
+        /// Delay adding the player by a frame until the additive UI scene is loaded.
+        /// Begin matchmaking once player finishes connecting.
         /// </summary>
-        /// <param name="conn">The connection the player object is for.</param>
-        /// <param name="roomPlayer">The room player object for this connection.</param>
-        /// <returns>A new GamePlayer object.</returns>
-        public override GameObject OnRoomServerCreateGamePlayer(NetworkConnectionToClient conn, GameObject roomPlayer)
+        /// <param name="conn"></param>
+        /// <returns></returns>
+        IEnumerator OnServerAddPlayerDelayed(NetworkConnectionToClient conn)
         {
-            return base.OnRoomServerCreateGamePlayer(conn, roomPlayer);
+            // wait for server to async load all subscenes for game instances
+            while (!_subscenesLoaded)
+                yield return null;
+
+            // Send Scene message to client to additively load the game scene
+            conn.Send(new SceneMessage { sceneName = UiScene, sceneOperation = SceneOperation.LoadAdditive });
+
+            // Wait for end of frame before adding the player to ensure Scene Message goes first
+            yield return new WaitForEndOfFrame();
+
+            base.OnServerAddPlayer(conn);
+            MatchMaker.Instance.AddPlayerToQueue(conn);
+
         }
 
         /// <summary>
-        /// This allows customization of the creation of the GamePlayer object on the server.
-        /// <para>This is only called for subsequent GamePlay scenes after the first one.</para>
-        /// <para>See OnRoomServerCreateGamePlayer to customize the player object for the initial GamePlay scene.</para>
+        /// Additively load the game scene and move the player's prefab to spawn within it.
         /// </summary>
-        /// <param name="conn">The connection the player object is for.</param>
-        public override void OnRoomServerAddPlayer(NetworkConnectionToClient conn)
+        /// <param name="conn"></param>
+        /// <returns></returns>
+        IEnumerator OnAddPlayersToMatch(NetworkConnectionToClient conn)
         {
-            base.OnRoomServerAddPlayer(conn);
+            // wait for server to async load all subscenes for game instances
+            while (!_subscenesLoaded)
+                yield return null;
+
+            ReplacePlayerPrefab(conn);
+
+            // Send Scene message to client to additively load the game scene
+            conn.Send(new SceneMessage { sceneName = GameScene, sceneOperation = SceneOperation.LoadAdditive });
+
+            // Wait for end of frame before adding the player to ensure Scene Message goes first
+            yield return new WaitForEndOfFrame();
+
+            conn.Send(new SceneMessage { sceneName = UiScene, sceneOperation = SceneOperation.UnloadAdditive });
+
+            PlayerNetworkData playerNetData = conn.identity.GetComponent<PlayerNetworkData>();
+            playerNetData.playerNumber = _clientIndex;
+            playerNetData.scoreIndex = _clientIndex / _subScenes.Count;
+            playerNetData.matchIndex = _clientIndex % _subScenes.Count;
+
+            // Do this only on server, not on clients
+            // This is what allows the NetworkSceneChecker on player and scene objects
+            // to isolate matches per scene instance on server.
+            if (_subScenes.Count > 0)
+                SceneManager.MoveGameObjectToScene(conn.identity.gameObject, _subScenes[_clientIndex % _subScenes.Count]);
+
+            _clientIndex++;
         }
 
-        /// <summary>
-        /// This is called on the server when it is told that a client has finished switching from the room scene to a game player scene.
-        /// <para>When switching from the room, the room-player is replaced with a game-player object. This callback function gives an opportunity to apply state from the room-player to the game-player object.</para>
-        /// </summary>
-        /// <param name="conn">The connection of the player</param>
-        /// <param name="roomPlayer">The room player object.</param>
-        /// <param name="gamePlayer">The game player object.</param>
-        /// <returns>False to not allow this player to replace the room player.</returns>
-        public override bool OnRoomServerSceneLoadedForPlayer(NetworkConnectionToClient conn, GameObject roomPlayer, GameObject gamePlayer)
+        public override void OnServerDisconnect(NetworkConnectionToClient conn)
         {
-            return base.OnRoomServerSceneLoadedForPlayer(conn, roomPlayer, gamePlayer);
+            MatchMaker.Instance.RemovePlayerFromQueue(conn.identity.GetComponent<PlayerQueueIdentity>());
+            base.OnServerDisconnect(conn);
         }
-
-        /// <summary>
-        /// This is called on the server when all the players in the room are ready.
-        /// <para>The default implementation of this function uses ServerChangeScene() to switch to the game player scene. By implementing this callback you can customize what happens when all the players in the room are ready, such as adding a countdown or a confirmation for a group leader.</para>
-        /// </summary>
-        public override void OnRoomServerPlayersReady()
-        {
-            base.OnRoomServerPlayersReady();
-        }
-
-        /// <summary>
-        /// This is called on the server when CheckReadyToBegin finds that players are not ready
-        /// <para>May be called multiple times while not ready players are joining</para>
-        /// </summary>
-        public override void OnRoomServerPlayersNotReady() { }
 
         #endregion
 
-        #region Client Callbacks
+        #region Start & Stop Callbacks
 
         /// <summary>
-        /// This is a hook to allow custom behaviour when the game client enters the room.
+        /// This is invoked when a server is started - including when a host is started.
+        /// <para>StartServer has multiple signatures, but they all cause this hook to be called.</para>
         /// </summary>
-        public override void OnRoomClientEnter() 
+        public override void OnStartServer()
         {
+            StartCoroutine(ServerLoadSubScenes());
+        }
+
+        // We're additively loading scenes, so GetSceneAt(0) will return the main "container" scene,
+        // therefore we start the index at one and loop through instances value inclusively.
+        // If instances is zero, the loop is bypassed entirely.
+        IEnumerator ServerLoadSubScenes()
+        {
+            // Wait for scene to properly transition from OfflineScene to RoomScene
+            yield return new WaitForEndOfFrame();
+
+            for (int index = 1; index <= MatchInstances; index++)
+            {
+                yield return SceneManager.LoadSceneAsync(GameScene, new LoadSceneParameters { loadSceneMode = LoadSceneMode.Additive, localPhysicsMode = LocalPhysicsMode.Physics3D });
+
+                Scene newScene = SceneManager.GetSceneAt(index);
+                _subScenes.Add(newScene);
+                // Spawn interactable objects here; ie., doors, powerups, etc.
+            }
+
+            _subscenesLoaded = true;
         }
 
         /// <summary>
-        /// This is a hook to allow custom behaviour when the game client exits the room.
+        /// This is called when a server is stopped - including when a host is stopped.
         /// </summary>
-        public override void OnRoomClientExit() { }
-
-        /// <summary>
-        /// This is called on the client when it connects to server.
-        /// </summary>
-        public override void OnRoomClientConnect() { }
-
-        /// <summary>
-        /// This is called on the client when disconnected from a server.
-        /// </summary>
-        public override void OnRoomClientDisconnect() { }
-
-        /// <summary>
-        /// This is called on the client when a client is started.
-        /// </summary>
-        public override void OnRoomStartClient() { }
-
-        /// <summary>
-        /// This is called on the client when the client stops.
-        /// </summary>
-        public override void OnRoomStopClient() { }
-
-        /// <summary>
-        /// This is called on the client when the client is finished loading a new networked scene.
-        /// </summary>
-        public override void OnRoomClientSceneChanged() { }
-
-        #endregion
-
-        #region Optional UI
-
-        public override void OnGUI()
+        public override void OnStopServer()
         {
-            base.OnGUI();
+            NetworkServer.SendToAll(new SceneMessage { sceneName = GameScene, sceneOperation = SceneOperation.UnloadAdditive });
+            StartCoroutine(ServerUnloadSubScenes());
+            _clientIndex = 0;
+        }
+
+        // Unload the subScenes and unused assets and clear the subScenes list.
+        IEnumerator ServerUnloadSubScenes()
+        {
+            for (int index = 0; index < _subScenes.Count; index++)
+                yield return SceneManager.UnloadSceneAsync(_subScenes[index]);
+
+            _subScenes.Clear();
+            _subscenesLoaded = false;
+
+            yield return Resources.UnloadUnusedAssets();
+        }
+
+        /// <summary>
+        /// This is called when a client is stopped.
+        /// </summary>
+        public override void OnStopClient()
+        {
+            // make sure we're not in host mode
+            if (mode == NetworkManagerMode.ClientOnly)
+            {
+                StartCoroutine(ClientUnloadSubScenes());
+            }
+        }
+
+        // Unload all but the active scene, which is the "container" scene
+        IEnumerator ClientUnloadSubScenes()
+        {
+            for (int index = 0; index < SceneManager.sceneCount; index++)
+            {
+                if (SceneManager.GetSceneAt(index) != SceneManager.GetActiveScene())
+                    yield return SceneManager.UnloadSceneAsync(SceneManager.GetSceneAt(index));
+            }
         }
 
         #endregion
     }
-
 }

@@ -1,42 +1,38 @@
-using Mirror;
 using UnityEngine;
 
 namespace DokiDokiFightClub
 {
+    /// <summary>
+    /// Class handles user input on UI elements.
+    /// </summary>
     public class UIManager : MonoBehaviour
     {
-        //private NetworkManager _networkManager;
-        private NetworkRoomManager _lobbyMgr;
+        private DdfcNetworkManager _networkManager;
 
         private void Start()
         {
-            //_networkManager = FindObjectOfType<NetworkManager>();
-            _lobbyMgr = FindObjectOfType<NetworkRoomManager>();
+            _networkManager = FindObjectOfType<DdfcNetworkManager>();
         }
 
+        #region Offline Scene UI
         /// <summary>
-        /// TESTING ONLY! Remove later.
+        /// Start Network Client.
         /// </summary>
-        public void LaunchServer()
-        {
-            //_networkManager.StartServer();
-            _lobbyMgr.StartServer();
-        }
-
         public void OnPlayButton()
         {
-            //_networkManager.StartClient();
-            _lobbyMgr.StartClient();
+            _networkManager.StartClient();
         }
+        #endregion
 
-        public void Host()
+        #region Room Scene UI
+        /// <summary>
+        /// Returns Client to OfflineScene.
+        /// </summary>
+        public void OnLeaveButton()
         {
-            NetworkPlayer.LocalPlayer.HostMatch();
+            _networkManager.StopClient();
+            // TODO: Handle Matchmaking/remove player from queue.
         }
-
-        public void Join()
-        {
-            NetworkPlayer.LocalPlayer.JoinMatch();
-        }
+        #endregion
     }
 }

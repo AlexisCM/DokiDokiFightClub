@@ -1,169 +1,89 @@
+using System.Collections.Generic;
 using Mirror;
-using System;
-using System.Security.Cryptography;
-using System.Text;
 using UnityEngine;
 
 namespace DokiDokiFightClub
 {
     public class MatchMaker : NetworkBehaviour
     {
+
+        // Singleton Instance
         public static MatchMaker Instance { get; private set; }
 
-        private const int _serverMatchCapacity = 5; // Maximum number of simultaneous matches
-        private const int _playersPerMatch = 2; // Exact number of players allowed per match
+        public readonly SyncList<PlayerQueueIdentity> PlayerQueue = new(); // List of waiting players
+        public readonly int PlayersPerMatch = 2; // Exact number of players needed to start a match
 
-        private readonly SyncList<Match> _matches = new(); // List of ongoing matches
-        private readonly SyncList<string> _matchIds = new(); // List of IDs for ongoing matches
+        private DdfcNetworkManager _networkManager;
 
-        private readonly SyncList<NetworkPlayer> player = new(); // List of players looking for a match
-
-        private void Awake()
+        void Awake()
         {
             if (Instance != null && Instance != this)
-                Destroy(this);
+                Destroy(gameObject);
             else
                 Instance = this;
         }
 
         void Start()
         {
-            DontDestroyOnLoad(this);
+            DontDestroyOnLoad(Instance.gameObject);
+            _networkManager = FindObjectOfType<DdfcNetworkManager>();
         }
 
-        #region Custom Methods (non-tutorial)
-        //public void AddPlayerToQueue(NetworkPlayer player)
-        //{
-        //    CmdAddPlayerToQueue(player);
-        //}
-
-        //public void RemovePlayerFromQueue(NetworkPlayer player)
-        //{
-        //    this.player.Remove(player);
-        //}
-
-
-        //private void CreateMatch(List<NetworkPlayer> players)
-        //{
-        //    Match match = new(GenerateMatchId(), players);
-        //    _matches.Add(match);
-
-        //    foreach (NetworkPlayer player in players)
-        //    {
-        //        player.JoinMatchLobby();
-        //    }
-        //}
-
-        #endregion
-
-        public string GenerateMatchId()
+        public void AddPlayerToQueue(NetworkConnectionToClient conn)
         {
-            string id = string.Empty;
+            PlayerQueue.Add(conn.identity.gameObject.GetComponent<PlayerQueueIdentity>());
+            Debug.Log($"# of players in Queue: {PlayerQueue.Count}");
 
-            for (int i = 0; i < 5; ++i)
+            if (PlayerQueue.Count >= PlayersPerMatch)
             {
-                int random = UnityEngine.Random.Range(0, 36);
-                if (random < 26)
-                    id += (char)(random + 65); // Uppercase Letter
-                else
-                    id += (random - 26).ToString(); // Number
-            }
-            Debug.Log($"Generated Match ID: {id}");
-            return id;
-        }
-
-        public bool HostMatch(string matchId, GameObject player)
-        {
-            if (_matchIds.Contains(matchId))
-            {
-                Debug.Log("Match ID already exists. Failed to Host Match.");
-                return false;
-            }
-
-            _matchIds.Add(matchId);
-            _matches.Add(new Match(matchId, player));
-            Debug.Log("Match generated");
-            return true;
-        }
-
-        public bool JoinMatch(string matchId, GameObject player)
-        {
-            if (!_matchIds.Contains(matchId))
-            {
-                Debug.Log("Match ID does not exist. Failed to Join Match.");
-                return false;
-            }
-
-            for (int i = 0; i < _matches.Count; ++i)
-            {
-                if (_matches[i].MatchId == matchId)
+                List<PlayerQueueIdentity> matchPlayers = new();
+                for (int i = 0; i < PlayersPerMatch; ++i)
                 {
-                    _matches[i].Players.Add(player);
-                    break;
+                    matchPlayers.Add(PlayerQueue[i]);
                 }
+                InitiateMatch(matchPlayers);
             }
-            Debug.Log("Joined Match");
-            return true;
         }
 
-        /// <summary>
-        /// Finds an available match and returns its ID.
-        /// </summary>
-        /// <returns></returns>
-        public string FindMatch()
+        void InitiateMatch(List<PlayerQueueIdentity> matchPlayers)
         {
-            for (int i = 0; i < _matches.Count; ++i)
+            Debug.Log("MatchMaker.InitateMatch()");
+            foreach (PlayerQueueIdentity player in matchPlayers)
             {
-                if (_matches[i].IsJoinable)
-                    return _matches[i].MatchId;
+                // Remove players from queue before starting match
+                RemovePlayerFromQueue(player);
+                //NetworkIdentity playerIdentity = player.gameObject.GetComponent<NetworkIdentity>();
+                //if (netIdentity == playerIdentity && isLocalPlayer)
+                //    NetworkClient.AddPlayer();
             }
-            return string.Empty;
-        }
-
-        public void StartMatch()
-        {
+            _networkManager.AddPlayersToMatch(matchPlayers);
         }
 
         #region Server Commands
         //[Command]
-        //public void CmdAddPlayerToQueue(NetworkPlayer player)
+        //public void CmdAddPlayerToQueue(NetworkConnectionToClient player)
         //{
-        //    // Check for server load
-        //    if (_matches.Count >= _serverMatchCapacity)
+        //    Debug.Log("MatchMaker.CmdAddPlayerToQueue");
+        //    PlayerQueue.Add(player);
+
+        //    if (PlayerQueue.Count >= PlayersPerMatch)
         //    {
-        //        // Server at match capacity
-        //        // TODO: Display UI to inform player of status
-        //        return;
+        //        List<NetworkConnectionToClient> matchPlayers = new List<NetworkConnectionToClient>();
+        //        for (int i = 0; i < PlayersPerMatch; ++i)
+        //        {
+        //            matchPlayers.Add(PlayerQueue[i]);
+        //        }
+        //        InitiateMatch(matchPlayers);
         //    }
-
-        //    this.player.Add(player);
-        //    Debug.Log($"Added player {player} to the queue");
-
-        //    // Not enough players to create a match
-        //    if (this.player.Count < _playersPerMatch)
-        //        return;
-
-        //    // Add players to a new match, then remove them from queue
-        //    List<NetworkPlayer> matchPlayers = new();
-        //    for (int i = 0; i < _playersPerMatch; i++)
-        //    {
-        //        matchPlayers.Add(this.player[i]);
-        //        this.player.RemoveAt(i);
-        //    }
-
-        //    CreateMatch(matchPlayers);
         //}
-        #endregion
-    }
 
-    public static class MatchIdExtension
-    {
-        public static Guid ToGuid(this string id)
+        //[Command]
+        public void RemovePlayerFromQueue(PlayerQueueIdentity player)
         {
-            MD5CryptoServiceProvider provider = new();
-            byte[] inputBytes = Encoding.Default.GetBytes(id);
-            byte[] hashBytes = provider.ComputeHash(inputBytes);
-            return new Guid(hashBytes);
+            PlayerQueue.Remove(player);
+            Debug.Log($"MatchMaker.RemovePlayerFromQueue. # players left: {PlayerQueue.Count}");
         }
+
+        #endregion
     }
 }

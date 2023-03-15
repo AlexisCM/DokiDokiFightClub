@@ -5,6 +5,7 @@ namespace DokiDokiFightClub
 {
     public class Player : Entity
     {
+        public int MatchId;
         public PlayerInput PlayerInput; // Handles player inputs (KMB or Gamepad)
         public Weapon ActiveWeapon;     // Player's active weapon
 
