@@ -10,33 +10,40 @@ namespace DokiDokiFightClub
     public class DdfcNetworkManager : NetworkManager
     {
         [Header("DDFC Settings")]
-        public GameObject InGamePlayerPrefab;
+        public GameObject InGamePlayerPrefab; // Prefab to load when player spawns in game scene
 
         [Header("MultiScene Setup")]
-        public int instances = 2;
+        public int MatchInstances = 2; // Number of simultaneous match instances allowed
 
         [Scene]
-        public string gameScene;
+        public string GameScene; // Name of game scene
+
+        [Scene]
+        public string UiScene; // Name of scene which holds UI
 
         // This is set true after server loads all subscene instances
-        bool subscenesLoaded;
+        bool _subscenesLoaded;
 
         // subscenes are added to this list as they're loaded
-        readonly List<Scene> subScenes = new();
+        readonly List<Scene> _subScenes = new();
 
         // Sequential index used in round-robin deployment of players into instances and score positioning
-        int clientIndex;
+        int _clientIndex;
 
+        /// <summary>
+        /// Called by the MatchMaker when two players are ready to be put into a match.
+        /// </summary>
+        /// <param name="matchPlayers"></param>
         public void AddPlayersToMatch(List<PlayerQueueIdentity> matchPlayers)
         {
             foreach (var player in matchPlayers)
             {
-                StartCoroutine(OnServerAddPlayerDelayed(player.connectionToClient));
+                StartCoroutine(OnAddPlayersToMatch(player.connectionToClient));
             }
         }
 
         /// <summary>
-        /// Replace player connection's prefab.
+        /// Replace prefab corresponding to the player's connection.
         /// </summary>
         /// <param name="conn"></param>
         public void ReplacePlayerPrefab(NetworkConnectionToClient conn)
@@ -62,41 +69,65 @@ namespace DokiDokiFightClub
         /// <param name="conn">Connection from client.</param>
         public override void OnServerAddPlayer(NetworkConnectionToClient conn)
         {
-            //StartCoroutine(OnServerAddPlayerDelayed(conn));
-            base.OnServerAddPlayer(conn);
-            MatchMaker.Instance.AddPlayerToQueue(conn);
+            StartCoroutine(OnServerAddPlayerDelayed(conn));
         }
 
-        // This delay is mostly for the host player that loads too fast for the
-        // server to have subscenes async loaded from OnStartServer ahead of it.
+        /// <summary>
+        /// Delay adding the player by a frame until the additive UI scene is loaded.
+        /// Begin matchmaking once player finishes connecting.
+        /// </summary>
+        /// <param name="conn"></param>
+        /// <returns></returns>
         IEnumerator OnServerAddPlayerDelayed(NetworkConnectionToClient conn)
         {
             // wait for server to async load all subscenes for game instances
-            while (!subscenesLoaded)
+            while (!_subscenesLoaded)
+                yield return null;
+
+            // Send Scene message to client to additively load the game scene
+            conn.Send(new SceneMessage { sceneName = UiScene, sceneOperation = SceneOperation.LoadAdditive });
+
+            // Wait for end of frame before adding the player to ensure Scene Message goes first
+            yield return new WaitForEndOfFrame();
+
+            base.OnServerAddPlayer(conn);
+            MatchMaker.Instance.AddPlayerToQueue(conn);
+
+        }
+
+        /// <summary>
+        /// Additively load the game scene and move the player's prefab to spawn within it.
+        /// </summary>
+        /// <param name="conn"></param>
+        /// <returns></returns>
+        IEnumerator OnAddPlayersToMatch(NetworkConnectionToClient conn)
+        {
+            // wait for server to async load all subscenes for game instances
+            while (!_subscenesLoaded)
                 yield return null;
 
             ReplacePlayerPrefab(conn);
 
             // Send Scene message to client to additively load the game scene
-            conn.Send(new SceneMessage { sceneName = gameScene, sceneOperation = SceneOperation.LoadAdditive });
+            conn.Send(new SceneMessage { sceneName = GameScene, sceneOperation = SceneOperation.LoadAdditive });
 
             // Wait for end of frame before adding the player to ensure Scene Message goes first
             yield return new WaitForEndOfFrame();
 
-            PlayerNetworkData playerNetData = conn.identity.GetComponent<PlayerNetworkData>();
-            playerNetData.playerNumber = clientIndex;
-            playerNetData.scoreIndex = clientIndex / subScenes.Count;
-            playerNetData.matchIndex = clientIndex % subScenes.Count;
+            conn.Send(new SceneMessage { sceneName = UiScene, sceneOperation = SceneOperation.UnloadAdditive });
 
-            // TODO: Disable container scene's UI for clients.
+            PlayerNetworkData playerNetData = conn.identity.GetComponent<PlayerNetworkData>();
+            playerNetData.playerNumber = _clientIndex;
+            playerNetData.scoreIndex = _clientIndex / _subScenes.Count;
+            playerNetData.matchIndex = _clientIndex % _subScenes.Count;
 
             // Do this only on server, not on clients
             // This is what allows the NetworkSceneChecker on player and scene objects
             // to isolate matches per scene instance on server.
-            if (subScenes.Count > 0)
-                SceneManager.MoveGameObjectToScene(conn.identity.gameObject, subScenes[clientIndex % subScenes.Count]);
+            if (_subScenes.Count > 0)
+                SceneManager.MoveGameObjectToScene(conn.identity.gameObject, _subScenes[_clientIndex % _subScenes.Count]);
 
-            clientIndex++;
+            _clientIndex++;
         }
 
         public override void OnServerDisconnect(NetworkConnectionToClient conn)
@@ -126,16 +157,16 @@ namespace DokiDokiFightClub
             // Wait for scene to properly transition from OfflineScene to RoomScene
             yield return new WaitForEndOfFrame();
 
-            for (int index = 1; index <= instances; index++)
+            for (int index = 1; index <= MatchInstances; index++)
             {
-                yield return SceneManager.LoadSceneAsync(gameScene, new LoadSceneParameters { loadSceneMode = LoadSceneMode.Additive, localPhysicsMode = LocalPhysicsMode.Physics3D });
+                yield return SceneManager.LoadSceneAsync(GameScene, new LoadSceneParameters { loadSceneMode = LoadSceneMode.Additive, localPhysicsMode = LocalPhysicsMode.Physics3D });
 
                 Scene newScene = SceneManager.GetSceneAt(index);
-                subScenes.Add(newScene);
+                _subScenes.Add(newScene);
                 // Spawn interactable objects here; ie., doors, powerups, etc.
             }
 
-            subscenesLoaded = true;
+            _subscenesLoaded = true;
         }
 
         /// <summary>
@@ -143,19 +174,19 @@ namespace DokiDokiFightClub
         /// </summary>
         public override void OnStopServer()
         {
-            NetworkServer.SendToAll(new SceneMessage { sceneName = gameScene, sceneOperation = SceneOperation.UnloadAdditive });
+            NetworkServer.SendToAll(new SceneMessage { sceneName = GameScene, sceneOperation = SceneOperation.UnloadAdditive });
             StartCoroutine(ServerUnloadSubScenes());
-            clientIndex = 0;
+            _clientIndex = 0;
         }
 
         // Unload the subScenes and unused assets and clear the subScenes list.
         IEnumerator ServerUnloadSubScenes()
         {
-            for (int index = 0; index < subScenes.Count; index++)
-                yield return SceneManager.UnloadSceneAsync(subScenes[index]);
+            for (int index = 0; index < _subScenes.Count; index++)
+                yield return SceneManager.UnloadSceneAsync(_subScenes[index]);
 
-            subScenes.Clear();
-            subscenesLoaded = false;
+            _subScenes.Clear();
+            _subscenesLoaded = false;
 
             yield return Resources.UnloadUnusedAssets();
         }
