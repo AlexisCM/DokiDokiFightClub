@@ -960,7 +960,7 @@ MonoBehaviour:
   autoConnectClientBuild: 0
   sendRate: 30
   offlineScene: Assets/Level/Scenes/OfflineScene.unity
-  onlineScene: Assets/Level/Scenes/RoomScene.unity
+  onlineScene: Assets/Level/Scenes/QueueScene.unity
   transport: {fileID: 1456616579}
   networkAddress: localhost
   maxConnections: 100
@@ -968,7 +968,8 @@ MonoBehaviour:
   playerPrefab: {fileID: 8717846803400821128, guid: 7c4db2746b1d92e4e92a5b59a8e92ada, type: 3}
   autoCreatePlayer: 1
   playerSpawnMethod: 1
-  spawnPrefabs: []
+  spawnPrefabs:
+  - {fileID: 9167805898917521471, guid: 668d9c27ff54a4949b60f805cc6cd940, type: 3}
   timeInterpolationGui: 0
   InGamePlayerPrefab: {fileID: 9167805898917521471, guid: 668d9c27ff54a4949b60f805cc6cd940, type: 3}
   MatchInstances: 2

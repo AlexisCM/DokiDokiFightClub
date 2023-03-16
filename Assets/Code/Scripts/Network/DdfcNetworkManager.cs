@@ -156,7 +156,7 @@ namespace DokiDokiFightClub
         // If instances is zero, the loop is bypassed entirely.
         IEnumerator ServerLoadSubScenes()
         {
-            // Wait for scene to properly transition from OfflineScene to RoomScene
+            // Wait for scene to properly transition from OfflineScene to QueueScene
             yield return new WaitForEndOfFrame();
 
             for (int index = 1; index <= MatchInstances; index++)
