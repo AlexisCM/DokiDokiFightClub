@@ -12,7 +12,6 @@ namespace DokiDokiFightClub
         [Header("DDFC Settings")]
         public GameObject InGamePlayerPrefab; // Prefab to load when player spawns in game scene
 
-        [Header("MultiScene Setup")]
         public int MatchInstances = 2; // Number of simultaneous match instances allowed
 
         [Scene]
@@ -34,11 +33,11 @@ namespace DokiDokiFightClub
         /// Called by the MatchMaker when two players are ready to be put into a match.
         /// </summary>
         /// <param name="matchPlayers"></param>
-        public void AddPlayersToMatch(List<PlayerQueueIdentity> matchPlayers)
+        public void AddPlayersToMatch(Match match)
         {
-            foreach (var player in matchPlayers)
+            foreach (var player in match.Players)
             {
-                StartCoroutine(OnAddPlayersToMatch(player.connectionToClient));
+                StartCoroutine(OnAddPlayersToMatch(match.MatchId, player.connectionToClient));
             }
         }
 
@@ -100,7 +99,7 @@ namespace DokiDokiFightClub
         /// </summary>
         /// <param name="conn"></param>
         /// <returns></returns>
-        IEnumerator OnAddPlayersToMatch(NetworkConnectionToClient conn)
+        IEnumerator OnAddPlayersToMatch(int matchId, NetworkConnectionToClient conn)
         {
             // wait for server to async load all subscenes for game instances
             while (!_subscenesLoaded)
@@ -116,16 +115,19 @@ namespace DokiDokiFightClub
 
             conn.Send(new SceneMessage { sceneName = UiScene, sceneOperation = SceneOperation.UnloadAdditive });
 
+            // Wait for end of frame before adding the player to ensure Scene Message goes first
+            yield return new WaitForEndOfFrame();
+
             PlayerNetworkData playerNetData = conn.identity.GetComponent<PlayerNetworkData>();
             playerNetData.playerNumber = _clientIndex;
             playerNetData.scoreIndex = _clientIndex / _subScenes.Count;
-            playerNetData.matchIndex = _clientIndex % _subScenes.Count;
+            playerNetData.matchIndex = matchId;
 
             // Do this only on server, not on clients
             // This is what allows the NetworkSceneChecker on player and scene objects
             // to isolate matches per scene instance on server.
             if (_subScenes.Count > 0)
-                SceneManager.MoveGameObjectToScene(conn.identity.gameObject, _subScenes[_clientIndex % _subScenes.Count]);
+                SceneManager.MoveGameObjectToScene(conn.identity.gameObject, _subScenes[matchId]);
 
             _clientIndex++;
         }

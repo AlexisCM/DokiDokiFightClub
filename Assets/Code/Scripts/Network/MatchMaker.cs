@@ -11,9 +11,11 @@ namespace DokiDokiFightClub
         public static MatchMaker Instance { get; private set; }
 
         public readonly SyncList<PlayerQueueIdentity> PlayerQueue = new(); // List of waiting players
+        public readonly SyncList<Match> Matches = new(); // List of matches
         public readonly int PlayersPerMatch = 2; // Exact number of players needed to start a match
 
         private DdfcNetworkManager _networkManager;
+        private int _lastUsedMatch; // Number of matches created thus far; used to generate match ids
 
         void Awake()
         {
@@ -27,6 +29,18 @@ namespace DokiDokiFightClub
         {
             DontDestroyOnLoad(Instance.gameObject);
             _networkManager = FindObjectOfType<DdfcNetworkManager>();
+            _lastUsedMatch = 0;
+        }
+
+        int GetAvailableMatchId()
+        {
+            // Assumes there is room for at least 1 new match
+            return _lastUsedMatch++ % _networkManager.MatchInstances;
+        }
+
+        bool IsAvailableMatch()
+        {
+            return Matches.Count < _networkManager.MatchInstances;
         }
 
         public void AddPlayerToQueue(NetworkConnectionToClient conn)
@@ -34,7 +48,7 @@ namespace DokiDokiFightClub
             PlayerQueue.Add(conn.identity.gameObject.GetComponent<PlayerQueueIdentity>());
             Debug.Log($"# of players in Queue: {PlayerQueue.Count}");
 
-            if (PlayerQueue.Count >= PlayersPerMatch)
+            if (PlayerQueue.Count >= PlayersPerMatch && IsAvailableMatch())
             {
                 List<PlayerQueueIdentity> matchPlayers = new();
                 for (int i = 0; i < PlayersPerMatch; ++i)
@@ -52,38 +66,44 @@ namespace DokiDokiFightClub
             {
                 // Remove players from queue before starting match
                 RemovePlayerFromQueue(player);
-                //NetworkIdentity playerIdentity = player.gameObject.GetComponent<NetworkIdentity>();
-                //if (netIdentity == playerIdentity && isLocalPlayer)
-                //    NetworkClient.AddPlayer();
             }
-            _networkManager.AddPlayersToMatch(matchPlayers);
+            Match match = new(GetAvailableMatchId(), matchPlayers);
+            Matches.Add(match);
+            _networkManager.AddPlayersToMatch(match);
         }
 
-        #region Server Commands
-        //[Command]
-        //public void CmdAddPlayerToQueue(NetworkConnectionToClient player)
-        //{
-        //    Debug.Log("MatchMaker.CmdAddPlayerToQueue");
-        //    PlayerQueue.Add(player);
-
-        //    if (PlayerQueue.Count >= PlayersPerMatch)
-        //    {
-        //        List<NetworkConnectionToClient> matchPlayers = new List<NetworkConnectionToClient>();
-        //        for (int i = 0; i < PlayersPerMatch; ++i)
-        //        {
-        //            matchPlayers.Add(PlayerQueue[i]);
-        //        }
-        //        InitiateMatch(matchPlayers);
-        //    }
-        //}
-
-        //[Command]
         public void RemovePlayerFromQueue(PlayerQueueIdentity player)
         {
             PlayerQueue.Remove(player);
             Debug.Log($"MatchMaker.RemovePlayerFromQueue. # players left: {PlayerQueue.Count}");
         }
 
-        #endregion
+        public void RemoveMatch(int matchId)
+        {
+            for (int i = 0; i < Matches.Count; ++i)
+            {
+                if (Matches[i].MatchId == matchId)
+                {
+                    Matches.RemoveAt(i);
+                    break;
+                }
+            }
+        }
+    }
+
+    [System.Serializable]
+    public class Match
+    {
+        public int MatchId;
+        public List<PlayerQueueIdentity> Players;
+
+        public Match(int matchId, List<PlayerQueueIdentity> players)
+        {
+            MatchId = matchId;
+            Players = players;
+        }
+
+        // Default constructor
+        public Match() { }
     }
 }
