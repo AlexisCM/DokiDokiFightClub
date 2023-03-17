@@ -37,7 +37,7 @@ namespace DokiDokiFightClub
         {
             foreach (var player in match.Players)
             {
-                StartCoroutine(OnAddPlayersToMatch(match.MatchId, player.connectionToClient));
+                StartCoroutine(OnAddPlayersToMatch(match.MatchId, player.SpawnIndex, player.connectionToClient));
             }
         }
 
@@ -45,14 +45,17 @@ namespace DokiDokiFightClub
         /// Replace prefab corresponding to the player's connection.
         /// </summary>
         /// <param name="conn"></param>
-        public void ReplacePlayerPrefab(NetworkConnectionToClient conn)
+        public void ReplacePlayerPrefab(int spawnIndex, NetworkConnectionToClient conn)
         {
             // Cache a reference to the current player object
             GameObject oldPlayer = conn.identity.gameObject;
+            Transform spawnPoint = startPositions[spawnIndex];
+            GameObject newPlayer = Instantiate(InGamePlayerPrefab);
+            newPlayer.transform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
 
             // Instantiate the new player object and broadcast to clients
             // Include true for keepAuthority paramater to prevent ownership change
-            NetworkServer.ReplacePlayerForConnection(conn, Instantiate(InGamePlayerPrefab), true);
+            NetworkServer.ReplacePlayerForConnection(conn, newPlayer, true);
 
             // Remove the previous player object that's now been replaced
             // Delay is required to allow replacement to complete.
@@ -99,13 +102,13 @@ namespace DokiDokiFightClub
         /// </summary>
         /// <param name="conn"></param>
         /// <returns></returns>
-        IEnumerator OnAddPlayersToMatch(int matchId, NetworkConnectionToClient conn)
+        IEnumerator OnAddPlayersToMatch(int matchId, int spawnIndex, NetworkConnectionToClient conn)
         {
             // wait for server to async load all subscenes for game instances
             while (!_subscenesLoaded)
                 yield return null;
 
-            ReplacePlayerPrefab(conn);
+            ReplacePlayerPrefab(spawnIndex, conn);
 
             // Send Scene message to client to additively load the game scene
             conn.Send(new SceneMessage { sceneName = GameScene, sceneOperation = SceneOperation.LoadAdditive });
@@ -120,7 +123,7 @@ namespace DokiDokiFightClub
 
             PlayerNetworkData playerNetData = conn.identity.GetComponent<PlayerNetworkData>();
             playerNetData.playerNumber = _clientIndex;
-            playerNetData.scoreIndex = _clientIndex / _subScenes.Count;
+            playerNetData.scoreIndex = spawnIndex;
             playerNetData.matchIndex = matchId;
 
             // Do this only on server, not on clients

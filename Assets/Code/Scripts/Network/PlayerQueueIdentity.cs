@@ -7,13 +7,7 @@ namespace DokiDokiFightClub
 {
     public class PlayerQueueIdentity : NetworkBehaviour
     {
-        public bool IsMatchMade { get; private set; }
-
-        public override void OnStartClient()
-        {
-            base.OnStartClient();
-            IsMatchMade = false;
-        }
+        public int SpawnIndex;
 
         public override void OnStopClient()
         {

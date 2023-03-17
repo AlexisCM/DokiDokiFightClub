@@ -32,6 +32,25 @@ namespace DokiDokiFightClub
             _lastUsedMatch = 0;
         }
 
+        /// <summary>
+        /// Randomly generate an index between 0 (inclusive) and the number of players per match (exclusive).
+        /// </summary>
+        /// <returns>Player's spawn index</returns>
+        int GenerateSpawnIndex()
+        {
+            return Random.Range(0, PlayersPerMatch);
+        }
+
+        /// <summary>
+        /// Returns the alternate index when the opposing player's spawn has already been assigned.
+        /// </summary>
+        /// <param name="opposingPlayerIndex">Previously assigned spawn index of opposing player</param>
+        /// <returns>This player's spawn index</returns>
+        int GenerateSpawnIndex(int opposingPlayerIndex)
+        {
+            return (opposingPlayerIndex == 0) ? 1 : 0;
+        }
+
         int GetAvailableMatchId()
         {
             // Assumes there is room for at least 1 new match
@@ -50,25 +69,37 @@ namespace DokiDokiFightClub
 
             if (PlayerQueue.Count >= PlayersPerMatch && IsAvailableMatch())
             {
-                List<PlayerQueueIdentity> matchPlayers = new();
-                for (int i = 0; i < PlayersPerMatch; ++i)
-                {
-                    matchPlayers.Add(PlayerQueue[i]);
-                }
-                InitiateMatch(matchPlayers);
+                InitiateMatch();
             }
         }
 
-        void InitiateMatch(List<PlayerQueueIdentity> matchPlayers)
+        void InitiateMatch()
         {
+            List<PlayerQueueIdentity> matchPlayers = new();
             Debug.Log("MatchMaker.InitateMatch()");
+            // Generate random spawn index for first player
+            var spawnIndex = GenerateSpawnIndex();
+
+            for (int i = 0; i < PlayersPerMatch; ++i)
+            {
+                var player = PlayerQueue[i];
+                player.SpawnIndex = spawnIndex;
+                matchPlayers.Add(player);
+
+                // Generate alternate spawn index for next player
+                spawnIndex = GenerateSpawnIndex(player.SpawnIndex);
+            }
+
+            // Remove players from queue before starting match
             foreach (PlayerQueueIdentity player in matchPlayers)
             {
-                // Remove players from queue before starting match
                 RemovePlayerFromQueue(player);
             }
+
+            // Create the match
             Match match = new(GetAvailableMatchId(), matchPlayers);
             Matches.Add(match);
+            // Add players to match over the network
             _networkManager.AddPlayersToMatch(match);
         }
 
