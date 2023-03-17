@@ -484,7 +484,7 @@ MonoBehaviour:
   HealthMetre: {fileID: 9167805898917521606}
   MatchId: 0
   PlayerInput: {fileID: 9167805898917521602}
-  ActiveWeapon: {fileID: 0}
+  ActiveWeapon: {fileID: 8945838036527400409}
 --- !u!114 &-1666721242699538012
 MonoBehaviour:
   m_ObjectHideFlags: 0
