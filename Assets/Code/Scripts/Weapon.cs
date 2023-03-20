@@ -13,16 +13,17 @@ namespace DokiDokiFightClub
             BaseAttackSpeed = 1f;
         }
 
-        public void QuickAttack()
+        public void QuickAttack(Player thisPlayer)
         {
             // TODO: Add attack speed delay. Coroutine?
 
             Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
 
-            if (Physics.Raycast(ray, out RaycastHit hit) && hit.transform.CompareTag("Enemy"))
+            if (Physics.Raycast(ray, out RaycastHit hit) && hit.transform.CompareTag("Player"))
             {
-                Entity enemy = hit.transform.gameObject.GetComponent<Entity>();
-                enemy.TakeDamage(BaseDamage);
+                Player enemy = hit.transform.gameObject.GetComponent<Player>();
+                enemy.TakeDamage(BaseDamage, thisPlayer.PlayerId);
+                thisPlayer.Stats.AddDamageDealt(BaseDamage);
             }
             else
             {

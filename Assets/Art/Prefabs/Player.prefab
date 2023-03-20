@@ -275,10 +275,10 @@ GameObject:
   - component: {fileID: 9167805899407402823}
   - component: {fileID: 9167805898917521602}
   - component: {fileID: 9167805898917521601}
-  - component: {fileID: -1666721242699538012}
   - component: {fileID: 9167805898917521605}
   - component: {fileID: 6875108623655771501}
   - component: {fileID: 9167805898917521606}
+  - component: {fileID: 6299780729688250671}
   - component: {fileID: 9167805899407402825}
   - component: {fileID: 9167805898917521600}
   - component: {fileID: 795898343311592955}
@@ -480,31 +480,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   syncDirection: 0
   syncMode: 0
-  syncInterval: 0.1
-  HealthMetre: {fileID: 9167805898917521606}
-  MatchId: 0
+  syncInterval: 0
   PlayerInput: {fileID: 9167805898917521602}
   ActiveWeapon: {fileID: 8945838036527400409}
---- !u!114 &-1666721242699538012
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9167805898917521471}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 701fc7a4800dbb54b9fb0f446ad3d67f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  syncDirection: 0
-  syncMode: 0
-  syncInterval: 0
-  playerNumber: 0
-  scoreIndex: 0
-  matchIndex: 0
-  score: 0
-  clientMatchIndex: -1
+  Stats: {fileID: 6299780729688250671}
+  MatchMgrInstance: {fileID: 0}
+  ClientMatchIndex: -1
+  MatchId: 0
+  PlayerId: 0
+  Score: 0
+  _maxHealth: 0
 --- !u!114 &9167805898917521605
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -559,6 +544,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   MaxHealth: 0
   CurrentHealth: 0
+--- !u!114 &6299780729688250671
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9167805898917521471}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b42205be945451e438834eebcbac908d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!136 &9167805899407402825
 CapsuleCollider:
   m_ObjectHideFlags: 0
