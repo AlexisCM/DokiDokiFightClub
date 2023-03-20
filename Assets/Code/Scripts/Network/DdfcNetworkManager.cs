@@ -6,13 +6,40 @@ using UnityEngine.SceneManagement;
 
 namespace DokiDokiFightClub
 {
+    struct MatchSetup
+    {
+        public int MatchId;
+        public GameManager GameManager;
+        public bool CanStart;
+        private readonly List<GameObject> _matchPlayers;
+
+        public MatchSetup(int id, GameManager gameMgr)
+        {
+            MatchId = id;
+            GameManager = gameMgr;
+            _matchPlayers = new();
+            CanStart = false;
+        }
+
+        public void AddMatchPlayer(GameObject player)
+        {
+            _matchPlayers.Add(player);
+            if (_matchPlayers.Count == 2)
+                CanStart = true;
+        }
+
+        public List<GameObject> GetPlayers()
+        {
+            return _matchPlayers;
+        }
+    }
+
     [AddComponentMenu("")]
     public class DdfcNetworkManager : NetworkManager
     {
         [Header("DDFC Settings")]
         public GameObject InGamePlayerPrefab; // Prefab to load when player spawns in game scene
 
-        [Header("MultiScene Setup")]
         public int MatchInstances = 2; // Number of simultaneous match instances allowed
 
         [Scene]
@@ -21,43 +48,56 @@ namespace DokiDokiFightClub
         [Scene]
         public string UiScene; // Name of scene which holds UI
 
+        public List<GameManager> GameManagers; // List of GameManagers corresponding to each subscene
+        private MatchSetup[] _matches;  // Array of setup information for each match instance
+
         // This is set true after server loads all subscene instances
         bool _subscenesLoaded;
 
         // subscenes are added to this list as they're loaded
         readonly List<Scene> _subScenes = new();
 
-        // Sequential index used in round-robin deployment of players into instances and score positioning
-        int _clientIndex;
-
         /// <summary>
         /// Called by the MatchMaker when two players are ready to be put into a match.
         /// </summary>
         /// <param name="matchPlayers"></param>
-        public void AddPlayersToMatch(List<PlayerQueueIdentity> matchPlayers)
+        public void AddPlayersToMatch(Match match)
         {
-            foreach (var player in matchPlayers)
+            foreach (var player in match.Players)
             {
-                StartCoroutine(OnAddPlayersToMatch(player.connectionToClient));
+                StartCoroutine(OnAddPlayersToMatch(match.MatchId, player.SpawnIndex, player.connectionToClient));
             }
+
+            StartCoroutine(OnAllMatchPlayersReady(match.MatchId));
         }
 
         /// <summary>
         /// Replace prefab corresponding to the player's connection.
         /// </summary>
         /// <param name="conn"></param>
-        public void ReplacePlayerPrefab(NetworkConnectionToClient conn)
+        public void ReplacePlayerPrefab(int spawnIndex, NetworkConnectionToClient conn)
         {
             // Cache a reference to the current player object
             GameObject oldPlayer = conn.identity.gameObject;
+            Transform spawnPoint = startPositions[spawnIndex];
+            GameObject newPlayer = Instantiate(InGamePlayerPrefab);
+            newPlayer.transform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
 
             // Instantiate the new player object and broadcast to clients
             // Include true for keepAuthority paramater to prevent ownership change
-            NetworkServer.ReplacePlayerForConnection(conn, Instantiate(InGamePlayerPrefab), true);
+            NetworkServer.ReplacePlayerForConnection(conn, newPlayer, true);
 
             // Remove the previous player object that's now been replaced
             // Delay is required to allow replacement to complete.
             Destroy(oldPlayer, 0.1f);
+        }
+
+        IEnumerator OnAllMatchPlayersReady(int matchId)
+        {
+            while (!_matches[matchId].CanStart)
+                yield return null;
+
+            _matches[matchId].GameManager.InitializeMatch(_matches[matchId].GetPlayers());
         }
 
         #region Server System Callbacks
@@ -100,13 +140,13 @@ namespace DokiDokiFightClub
         /// </summary>
         /// <param name="conn"></param>
         /// <returns></returns>
-        IEnumerator OnAddPlayersToMatch(NetworkConnectionToClient conn)
+        IEnumerator OnAddPlayersToMatch(int matchId, int spawnIndex, NetworkConnectionToClient conn)
         {
             // wait for server to async load all subscenes for game instances
             while (!_subscenesLoaded)
                 yield return null;
 
-            ReplacePlayerPrefab(conn);
+            ReplacePlayerPrefab(spawnIndex, conn);
 
             // Send Scene message to client to additively load the game scene
             conn.Send(new SceneMessage { sceneName = GameScene, sceneOperation = SceneOperation.LoadAdditive });
@@ -116,18 +156,21 @@ namespace DokiDokiFightClub
 
             conn.Send(new SceneMessage { sceneName = UiScene, sceneOperation = SceneOperation.UnloadAdditive });
 
-            PlayerNetworkData playerNetData = conn.identity.GetComponent<PlayerNetworkData>();
-            playerNetData.playerNumber = _clientIndex;
-            playerNetData.scoreIndex = _clientIndex / _subScenes.Count;
-            playerNetData.matchIndex = _clientIndex % _subScenes.Count;
+            // Wait for end of frame before adding the player to ensure Scene Message goes first
+            yield return new WaitForEndOfFrame();
+
+            Player player = conn.identity.GetComponent<Player>();
+            player.PlayerId = spawnIndex;
+            player.MatchId = matchId;
+            player.MatchMgrInstance = _matches[matchId].GameManager;
+
+            _matches[matchId].AddMatchPlayer(player.gameObject);
 
             // Do this only on server, not on clients
             // This is what allows the NetworkSceneChecker on player and scene objects
             // to isolate matches per scene instance on server.
             if (_subScenes.Count > 0)
-                SceneManager.MoveGameObjectToScene(conn.identity.gameObject, _subScenes[_clientIndex % _subScenes.Count]);
-
-            _clientIndex++;
+                SceneManager.MoveGameObjectToScene(conn.identity.gameObject, _subScenes[matchId]);
         }
 
         public override void OnServerDisconnect(NetworkConnectionToClient conn)
@@ -146,6 +189,7 @@ namespace DokiDokiFightClub
         /// </summary>
         public override void OnStartServer()
         {
+            _matches = new MatchSetup[MatchInstances];
             StartCoroutine(ServerLoadSubScenes());
         }
 
@@ -154,7 +198,7 @@ namespace DokiDokiFightClub
         // If instances is zero, the loop is bypassed entirely.
         IEnumerator ServerLoadSubScenes()
         {
-            // Wait for scene to properly transition from OfflineScene to RoomScene
+            // Wait for scene to properly transition from OfflineScene to QueueScene
             yield return new WaitForEndOfFrame();
 
             for (int index = 1; index <= MatchInstances; index++)
@@ -167,6 +211,29 @@ namespace DokiDokiFightClub
             }
 
             _subscenesLoaded = true;
+            MatchSetup();
+        }
+
+        /// <summary>
+        /// Load preliminary information for each match.
+        /// Set each match's id and corresponding GameManager.
+        /// </summary>
+        void MatchSetup()
+        {
+            // Loop through subscenes
+            for (var i = 0; i < _subScenes.Count; ++i)
+            {
+                var rootObjects = _subScenes[i].GetRootGameObjects();
+                // loop through each subscene's root objects to find the game manager
+                for (var j = 0; j < rootObjects.Length; ++j)
+                {
+                    if (rootObjects[j] != null && rootObjects[j].name.Equals("GameManager"))
+                    {
+                        _matches[i] = new MatchSetup(i, rootObjects[j].GetComponent<GameManager>());
+                        break;
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -176,7 +243,6 @@ namespace DokiDokiFightClub
         {
             NetworkServer.SendToAll(new SceneMessage { sceneName = GameScene, sceneOperation = SceneOperation.UnloadAdditive });
             StartCoroutine(ServerUnloadSubScenes());
-            _clientIndex = 0;
         }
 
         // Unload the subScenes and unused assets and clear the subScenes list.

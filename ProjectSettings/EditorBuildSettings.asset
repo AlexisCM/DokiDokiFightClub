@@ -9,7 +9,7 @@ EditorBuildSettings:
     path: Assets/Level/Scenes/OfflineScene.unity
     guid: 0d8aca475f109df43ad720b4912c8da4
   - enabled: 1
-    path: Assets/Level/Scenes/RoomScene.unity
+    path: Assets/Level/Scenes/QueueScene.unity
     guid: 4e505f335164e7f49a7976be819cdfd6
   - enabled: 1
     path: Assets/Level/Scenes/GameScene.unity
