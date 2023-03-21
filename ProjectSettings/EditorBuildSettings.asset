@@ -10,7 +10,7 @@ EditorBuildSettings:
     guid: 0d8aca475f109df43ad720b4912c8da4
   - enabled: 1
     path: Assets/Level/Scenes/QueueScene.unity
-    guid: 4e505f335164e7f49a7976be819cdfd6
+    guid: 2e944bc91d5f9ef479f6e3120b393950
   - enabled: 1
     path: Assets/Level/Scenes/GameScene.unity
     guid: 185a5482d88e4ec428769a245840f41f
