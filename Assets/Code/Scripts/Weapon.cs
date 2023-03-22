@@ -22,7 +22,7 @@ namespace DokiDokiFightClub
             if (Physics.Raycast(ray, out RaycastHit hit) && hit.transform.CompareTag("Player"))
             {
                 Player enemy = hit.transform.gameObject.GetComponent<Player>();
-                enemy.TakeDamage(BaseDamage, thisPlayer.PlayerId);
+                enemy.TakeDamage(BaseDamage, thisPlayer);
                 thisPlayer.Stats.AddDamageDealt(BaseDamage);
             }
             else

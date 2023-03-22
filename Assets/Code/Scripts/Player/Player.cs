@@ -9,7 +9,7 @@ namespace DokiDokiFightClub
         public PlayerInput PlayerInput; // Handles player inputs (KMB or Gamepad)
         public Weapon ActiveWeapon;     // Player's active weapon
         public PlayerStats Stats;       // Player's stats for the current match (kills/deaths/damage/etc)
-        public GameManager MatchMgrInstance; // Instance of the GameManager attached to this player's match
+        //public GameManager MatchMgrInstance; // Instance of the GameManager attached to this player's match
         public int ClientMatchIndex = -1;
 
         #region SyncVars
@@ -45,6 +45,11 @@ namespace DokiDokiFightClub
             _playerInputActions.Player.HeavyAttack.performed += HeavyAttack;
         }
 
+        private void Start()
+        {
+            _networkManager = FindObjectOfType<DdfcNetworkManager>();
+        }
+
         private void OnEnable()
         {
             _playerInputActions.Player.QuickAttack.Enable();
@@ -77,30 +82,29 @@ namespace DokiDokiFightClub
         }
         #endregion
 
-        public void TakeDamage(int damage, int attackerId)
+        public void TakeDamage(int damage, Player attackingPlayer)
         {
             _currentHealth -= damage;
             Stats.AddDamageTaken(damage);
             Debug.Log($"{name} took {damage} dmg! Health is now {_currentHealth}");
 
             if (_currentHealth <= 0)
-                Die(attackerId);
+                Die(attackingPlayer);
         }
 
-        private void Die(int attackerId)
+        private void Die(Player attackingPlayer)
         {
             Stats.AddDeath();
-            Debug.Log($"MatchMgr? {MatchMgrInstance == null}");
-            Player attackingPlayer = MatchMgrInstance.GetPlayer(attackerId);
             attackingPlayer.Stats.AddKill();
 
-            // Notify GameManager that the player died, so the round can end
-            MatchMgrInstance.PlayerDeath(gameObject);
+            if (authority)
+                CmdNotifyDeath();
         }
 
         public void ResetState()
         {
             _currentHealth = 0;
+
         }
 
         void OnGUI()
@@ -116,7 +120,13 @@ namespace DokiDokiFightClub
         }
 
         #region Commands
-
+        [Command]
+        private void CmdNotifyDeath()
+        {
+            Debug.LogWarning(_networkManager.GameManagers.Count);
+            // Notify GameManager that the player died, so the round can end
+            _networkManager.GameManagers[MatchId].PlayerDeath(gameObject);
+        }
         #endregion
     }
 }

@@ -6,34 +6,6 @@ using UnityEngine.SceneManagement;
 
 namespace DokiDokiFightClub
 {
-    struct MatchSetup
-    {
-        public int MatchId;
-        public GameManager GameManager;
-        public bool CanStart;
-        private readonly List<GameObject> _matchPlayers;
-
-        public MatchSetup(int id, GameManager gameMgr)
-        {
-            MatchId = id;
-            GameManager = gameMgr;
-            _matchPlayers = new();
-            CanStart = false;
-        }
-
-        public void AddMatchPlayer(GameObject player)
-        {
-            _matchPlayers.Add(player);
-            if (_matchPlayers.Count == 2)
-                CanStart = true;
-        }
-
-        public List<GameObject> GetPlayers()
-        {
-            return _matchPlayers;
-        }
-    }
-
     [AddComponentMenu("")]
     public class DdfcNetworkManager : NetworkManager
     {
@@ -48,8 +20,7 @@ namespace DokiDokiFightClub
         [Scene]
         public string UiScene; // Name of scene which holds UI
 
-        public List<GameManager> GameManagers; // List of GameManagers corresponding to each subscene
-        private MatchSetup[] _matches;  // Array of setup information for each match instance
+        public readonly List<GameManager> GameManagers = new();
 
         // This is set true after server loads all subscene instances
         bool _subscenesLoaded;
@@ -61,9 +32,9 @@ namespace DokiDokiFightClub
         /// Called by the MatchMaker when two players are ready to be put into a match.
         /// </summary>
         /// <param name="matchPlayers"></param>
-        public void AddPlayersToMatch(Match match)
+        public void AddPlayersToMatchScene(Match match)
         {
-            foreach (var player in match.Players)
+            foreach (var player in match.QueuedPlayers)
             {
                 StartCoroutine(OnAddPlayersToMatch(match.MatchId, player.SpawnIndex, player.connectionToClient));
             }
@@ -80,8 +51,7 @@ namespace DokiDokiFightClub
             // Cache a reference to the current player object
             GameObject oldPlayer = conn.identity.gameObject;
             Transform spawnPoint = startPositions[spawnIndex];
-            GameObject newPlayer = Instantiate(InGamePlayerPrefab);
-            newPlayer.transform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
+            GameObject newPlayer = Instantiate(InGamePlayerPrefab, spawnPoint.position, spawnPoint.localRotation);
 
             // Instantiate the new player object and broadcast to clients
             // Include true for keepAuthority paramater to prevent ownership change
@@ -92,12 +62,18 @@ namespace DokiDokiFightClub
             Destroy(oldPlayer, 0.1f);
         }
 
+        public IEnumerator RegisterGameManager()
+        {
+            yield return null;
+        }
+
         IEnumerator OnAllMatchPlayersReady(int matchId)
         {
-            while (!_matches[matchId].CanStart)
+            var match = MatchMaker.Instance.Matches[matchId];
+            while (!match.CanStart)
                 yield return null;
 
-            _matches[matchId].GameManager.InitializeMatch(_matches[matchId].GetPlayers());
+            match.GameManager.StartMatch(match.GetPlayerObjects());
         }
 
         #region Server System Callbacks
@@ -162,9 +138,9 @@ namespace DokiDokiFightClub
             Player player = conn.identity.GetComponent<Player>();
             player.PlayerId = spawnIndex;
             player.MatchId = matchId;
-            player.MatchMgrInstance = _matches[matchId].GameManager;
+            //player.MatchMgrInstance = _matches[matchId].GameManager;
 
-            _matches[matchId].AddMatchPlayer(player.gameObject);
+            MatchMaker.Instance.Matches[matchId].AddMatchPlayer(player.gameObject);
 
             // Do this only on server, not on clients
             // This is what allows the NetworkSceneChecker on player and scene objects
@@ -189,7 +165,10 @@ namespace DokiDokiFightClub
         /// </summary>
         public override void OnStartServer()
         {
-            _matches = new MatchSetup[MatchInstances];
+            // Initialize GameManagers
+            for (int i = 0; i < MatchInstances; ++i)
+                GameManagers.Add(null);
+
             StartCoroutine(ServerLoadSubScenes());
         }
 
@@ -210,8 +189,8 @@ namespace DokiDokiFightClub
                 // Spawn interactable objects here; ie., doors, powerups, etc.
             }
 
-            _subscenesLoaded = true;
             MatchSetup();
+            _subscenesLoaded = true;
         }
 
         /// <summary>
@@ -221,15 +200,18 @@ namespace DokiDokiFightClub
         void MatchSetup()
         {
             // Loop through subscenes
+            Debug.Log($"number of subscenes: {_subScenes.Count}");
+
             for (var i = 0; i < _subScenes.Count; ++i)
             {
                 var rootObjects = _subScenes[i].GetRootGameObjects();
                 // loop through each subscene's root objects to find the game manager
                 for (var j = 0; j < rootObjects.Length; ++j)
                 {
-                    if (rootObjects[j] != null && rootObjects[j].name.Equals("GameManager"))
+                    if (rootObjects[j] != null && rootObjects[j].name == "GameManager")
                     {
-                        _matches[i] = new MatchSetup(i, rootObjects[j].GetComponent<GameManager>());
+                        GameManagers[i] = rootObjects[j].GetComponent<GameManager>();
+                        GameManagers[i].MatchId = i;
                         break;
                     }
                 }

@@ -278,6 +278,7 @@ GameObject:
   - component: {fileID: 9167805898917521605}
   - component: {fileID: 6875108623655771501}
   - component: {fileID: 9167805898917521606}
+  - component: {fileID: 2323544791785265290}
   - component: {fileID: 9167805899407402825}
   - component: {fileID: 9167805898917521600}
   - component: {fileID: 795898343311592955}
@@ -482,7 +483,7 @@ MonoBehaviour:
   syncInterval: 0
   PlayerInput: {fileID: 9167805898917521602}
   ActiveWeapon: {fileID: 8945838036527400409}
-  Stats: {fileID: 0}
+  Stats: {fileID: 2323544791785265290}
   MatchMgrInstance: {fileID: 0}
   ClientMatchIndex: -1
   MatchId: 0
@@ -543,6 +544,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   MaxHealth: 0
   CurrentHealth: 0
+--- !u!114 &2323544791785265290
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9167805898917521471}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4471948c5069a8145842a09e6f3e1103, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!136 &9167805899407402825
 CapsuleCollider:
   m_ObjectHideFlags: 0

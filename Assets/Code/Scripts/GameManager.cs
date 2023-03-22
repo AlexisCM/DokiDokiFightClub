@@ -6,9 +6,10 @@ namespace DokiDokiFightClub
 {
     public class GameManager : NetworkBehaviour
     {
-        public static GameManager Instance { get; private set; } // Singleton instance
+        //public static GameManager Instance { get; private set; } // Singleton instance
 
         [Header("Game Manager Settings")]
+        public int MatchId = -1; // The match managed by this GameManager
         public bool WaitingForPlayers = true;
         public List<GameObject> Players; // List of players
 
@@ -19,10 +20,10 @@ namespace DokiDokiFightClub
 
         public void Awake()
         {
-            if (Instance != null && Instance != this)
-                Destroy(gameObject);
-            else
-                Instance = this;
+            //if (Instance != null && Instance != this)
+            //    Destroy(gameObject);
+            //else
+            //    Instance = this;
 
             Round = GetComponent<Round>();
             WaitingForPlayers = true;
@@ -30,16 +31,13 @@ namespace DokiDokiFightClub
             Debug.Log($"GameManager {GetInstanceID()} awoke.");
         }
 
-        public void InitializeMatch(List<GameObject> players)
+        public void StartMatch(List<GameObject> players)
         {
             WaitingForPlayers = false;
             Debug.Log($"GameManager: Initializing Match");
             // Get all player objects
             Debug.Log($"Players areNull = {players == null}");
             Players = players;
-
-            for (var i = 0; i < Players.Count; ++i)
-                players[i].GetComponent<Player>().MatchMgrInstance = Instance;
 
             Round.StartRound();
         }
@@ -51,7 +49,7 @@ namespace DokiDokiFightClub
 
             // TESTING ONLY! APPLIES DMG TO PLAYER. REMOVE LATER:
             if (Input.GetKeyDown(KeyCode.V))
-                Players[0].GetComponent<Player>().TakeDamage(50, 0);
+                Players[0].GetComponent<Player>().TakeDamage(50, Players[1].GetComponent<Player>());
 
             // Check if round ended
             if (Round.CurrentTime <= 0)
@@ -106,7 +104,15 @@ namespace DokiDokiFightClub
         {
             Debug.Log($"{deadPlayer.name} DIED and lost the round!");
             // TODO: Update player scores
+            RpcRoundEnded();
+        }
+
+        #region Client RPCs
+        [ClientRpc]
+        private void RpcRoundEnded()
+        {
             RoundEnded();
         }
+        #endregion
     }
 }
