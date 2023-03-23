@@ -100,7 +100,7 @@ namespace DokiDokiFightClub
             Match match = new(GetAvailableMatchId(), matchPlayers);
             Matches.Add(match);
             // Add players to match over the network
-            _networkManager.AddPlayersToMatch(match);
+            _networkManager.AddPlayersToMatchScene(match);
         }
 
         public void RemovePlayerFromQueue(PlayerQueueIdentity player)
@@ -120,21 +120,5 @@ namespace DokiDokiFightClub
                 }
             }
         }
-    }
-
-    [System.Serializable]
-    public class Match
-    {
-        public int MatchId;
-        public List<PlayerQueueIdentity> Players;
-
-        public Match(int matchId, List<PlayerQueueIdentity> players)
-        {
-            MatchId = matchId;
-            Players = players;
-        }
-
-        // Default constructor
-        public Match() { }
     }
 }

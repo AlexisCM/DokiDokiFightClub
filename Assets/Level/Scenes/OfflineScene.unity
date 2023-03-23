@@ -970,11 +970,13 @@ MonoBehaviour:
   playerSpawnMethod: 0
   spawnPrefabs:
   - {fileID: 9167805898917521471, guid: 668d9c27ff54a4949b60f805cc6cd940, type: 3}
+  - {fileID: 2037235333094163637, guid: f09c6d125f8efb4489d3f1444c268d6b, type: 3}
   timeInterpolationGui: 0
   InGamePlayerPrefab: {fileID: 9167805898917521471, guid: 668d9c27ff54a4949b60f805cc6cd940, type: 3}
-  MatchInstances: 2
+  MatchManagerPrefab: {fileID: 2037235333094163637, guid: f09c6d125f8efb4489d3f1444c268d6b, type: 3}
   GameScene: Assets/Level/Scenes/GameScene.unity
   UiScene: Assets/Level/Scenes/UIScene.unity
+  MatchInstances: 2
 --- !u!114 &1456616578
 MonoBehaviour:
   m_ObjectHideFlags: 0

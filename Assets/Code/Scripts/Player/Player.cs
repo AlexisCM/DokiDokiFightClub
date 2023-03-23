@@ -9,7 +9,6 @@ namespace DokiDokiFightClub
         public PlayerInput PlayerInput; // Handles player inputs (KMB or Gamepad)
         public Weapon ActiveWeapon;     // Player's active weapon
         public PlayerStats Stats;       // Player's stats for the current match (kills/deaths/damage/etc)
-        public GameManager MatchMgrInstance; // Instance of the GameManager attached to this player's match
         public int ClientMatchIndex = -1;
 
         #region SyncVars
@@ -45,6 +44,11 @@ namespace DokiDokiFightClub
             _playerInputActions.Player.HeavyAttack.performed += HeavyAttack;
         }
 
+        private void Start()
+        {
+            _networkManager = FindObjectOfType<DdfcNetworkManager>();
+        }
+
         private void OnEnable()
         {
             _playerInputActions.Player.QuickAttack.Enable();
@@ -77,30 +81,31 @@ namespace DokiDokiFightClub
         }
         #endregion
 
-        public void TakeDamage(int damage, int attackerId)
+        public void TakeDamage(int damage, Player attackingPlayer)
         {
             _currentHealth -= damage;
             Stats.AddDamageTaken(damage);
             Debug.Log($"{name} took {damage} dmg! Health is now {_currentHealth}");
 
             if (_currentHealth <= 0)
-                Die(attackerId);
+                Die(attackingPlayer);
         }
 
-        private void Die(int attackerId)
+        public void ResetState(Transform spawnPoint)
+        {
+            ToggleComponents(false);
+            _currentHealth = _maxHealth;
+            gameObject.transform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
+            ToggleComponents(true);
+        }
+
+        private void Die(Player attackingPlayer)
         {
             Stats.AddDeath();
-            Debug.Log($"MatchMgr? {MatchMgrInstance == null}");
-            Player attackingPlayer = MatchMgrInstance.GetPlayer(attackerId);
             attackingPlayer.Stats.AddKill();
 
-            // Notify GameManager that the player died, so the round can end
-            MatchMgrInstance.PlayerDeath(gameObject);
-        }
-
-        public void ResetState()
-        {
-            _currentHealth = 0;
+            if (authority)
+                CmdNotifyDeath();
         }
 
         void OnGUI()
@@ -115,8 +120,24 @@ namespace DokiDokiFightClub
             }
         }
 
+        /// <summary>
+        /// Activates/Deactivates the Components, depending on whether isActive is true/false.
+        /// </summary>
+        /// <param name="isActive"></param>
+        private void ToggleComponents(bool isActive)
+        {
+            GetComponent<PlayerController>().enabled = isActive;
+            GetComponent<CharacterController>().enabled = isActive;
+        }
+
         #region Commands
 
+        [Command]
+        private void CmdNotifyDeath()
+        {
+            // Notify GameManager that the player died, so the round can end
+            _networkManager.MatchManagers[MatchId].PlayerDeath(gameObject);
+        }
         #endregion
     }
 }
