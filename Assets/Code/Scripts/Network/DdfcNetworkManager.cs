@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 
 namespace DokiDokiFightClub
@@ -11,22 +12,16 @@ namespace DokiDokiFightClub
     {
         [Header("DDFC Settings")]
         public GameObject InGamePlayerPrefab; // Prefab to load when player spawns in game scene
-
+        public GameObject MatchManagerPrefab; // Prefab to load when a new MatchManager instance is required
+        [Scene] public string GameScene; // Name of game scene
+        [Scene] public string UiScene; // Name of scene which holds UI
         public int MatchInstances = 2; // Number of simultaneous match instances allowed
-
-        [Scene]
-        public string GameScene; // Name of game scene
-
-        [Scene]
-        public string UiScene; // Name of scene which holds UI
+        public readonly Dictionary<int, MatchManager> MatchManagers = new();
 
         public readonly List<GameManager> GameManagers = new();
 
-        // This is set true after server loads all subscene instances
-        bool _subscenesLoaded;
-
-        // subscenes are added to this list as they're loaded
-        readonly List<Scene> _subScenes = new();
+        bool _subscenesLoaded; // This is set true after server loads all subscene instances
+        readonly List<Scene> _subscenes = new(); // subscenes are added to this list as they're loaded
 
         /// <summary>
         /// Called by the MatchMaker when two players are ready to be put into a match.
@@ -62,9 +57,17 @@ namespace DokiDokiFightClub
             Destroy(oldPlayer, 0.1f);
         }
 
-        public IEnumerator RegisterGameManager()
+        public void RegisterMatchManager(Scene scene)
         {
-            yield return null;
+            int i = _subscenes.IndexOf(scene);
+            // Create MatchManager and assign the corresponding matchId
+            MatchManager matchManager = Instantiate(MatchManagerPrefab).GetComponent<MatchManager>();
+            matchManager.SetMatchInstanceId(i);
+            MatchManagers[i] = matchManager;
+
+            // Move into correct subscene
+            NetworkServer.Spawn(matchManager.gameObject);
+            SceneManager.MoveGameObjectToScene(matchManager.gameObject, scene);
         }
 
         IEnumerator OnAllMatchPlayersReady(int matchId)
@@ -73,7 +76,7 @@ namespace DokiDokiFightClub
             while (!match.CanStart)
                 yield return null;
 
-            match.GameManager.StartMatch(match.GetPlayerObjects());
+            MatchManagers[matchId].StartMatch(match.GetPlayerObjects());
         }
 
         #region Server System Callbacks
@@ -138,15 +141,14 @@ namespace DokiDokiFightClub
             Player player = conn.identity.GetComponent<Player>();
             player.PlayerId = spawnIndex;
             player.MatchId = matchId;
-            //player.MatchMgrInstance = _matches[matchId].GameManager;
 
             MatchMaker.Instance.Matches[matchId].AddMatchPlayer(player.gameObject);
 
             // Do this only on server, not on clients
             // This is what allows the NetworkSceneChecker on player and scene objects
             // to isolate matches per scene instance on server.
-            if (_subScenes.Count > 0)
-                SceneManager.MoveGameObjectToScene(conn.identity.gameObject, _subScenes[matchId]);
+            if (_subscenes.Count > 0)
+                SceneManager.MoveGameObjectToScene(conn.identity.gameObject, _subscenes[matchId]);
         }
 
         public override void OnServerDisconnect(NetworkConnectionToClient conn)
@@ -165,10 +167,6 @@ namespace DokiDokiFightClub
         /// </summary>
         public override void OnStartServer()
         {
-            // Initialize GameManagers
-            for (int i = 0; i < MatchInstances; ++i)
-                GameManagers.Add(null);
-
             StartCoroutine(ServerLoadSubScenes());
         }
 
@@ -185,37 +183,11 @@ namespace DokiDokiFightClub
                 yield return SceneManager.LoadSceneAsync(GameScene, new LoadSceneParameters { loadSceneMode = LoadSceneMode.Additive, localPhysicsMode = LocalPhysicsMode.Physics3D });
 
                 Scene newScene = SceneManager.GetSceneAt(index);
-                _subScenes.Add(newScene);
-                // Spawn interactable objects here; ie., doors, powerups, etc.
+                _subscenes.Add(newScene);
+                RegisterMatchManager(newScene); // Instantiate a MatchManager to correspond to this scene
             }
 
-            MatchSetup();
             _subscenesLoaded = true;
-        }
-
-        /// <summary>
-        /// Load preliminary information for each match.
-        /// Set each match's id and corresponding GameManager.
-        /// </summary>
-        void MatchSetup()
-        {
-            // Loop through subscenes
-            Debug.Log($"number of subscenes: {_subScenes.Count}");
-
-            for (var i = 0; i < _subScenes.Count; ++i)
-            {
-                var rootObjects = _subScenes[i].GetRootGameObjects();
-                // loop through each subscene's root objects to find the game manager
-                for (var j = 0; j < rootObjects.Length; ++j)
-                {
-                    if (rootObjects[j] != null && rootObjects[j].name == "GameManager")
-                    {
-                        GameManagers[i] = rootObjects[j].GetComponent<GameManager>();
-                        GameManagers[i].MatchId = i;
-                        break;
-                    }
-                }
-            }
         }
 
         /// <summary>
@@ -230,10 +202,10 @@ namespace DokiDokiFightClub
         // Unload the subScenes and unused assets and clear the subScenes list.
         IEnumerator ServerUnloadSubScenes()
         {
-            for (int index = 0; index < _subScenes.Count; index++)
-                yield return SceneManager.UnloadSceneAsync(_subScenes[index]);
+            for (int index = 0; index < _subscenes.Count; index++)
+                yield return SceneManager.UnloadSceneAsync(_subscenes[index]);
 
-            _subScenes.Clear();
+            _subscenes.Clear();
             _subscenesLoaded = false;
 
             yield return Resources.UnloadUnusedAssets();

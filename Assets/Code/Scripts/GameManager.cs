@@ -78,7 +78,7 @@ namespace DokiDokiFightClub
 
             foreach (GameObject player in Players)
             {
-                player.GetComponent<Player>().ResetState();
+                //player.GetComponent<Player>().ResetState();
             }
 
             Round.ResetRound();

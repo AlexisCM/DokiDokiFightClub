@@ -101,10 +101,10 @@ namespace DokiDokiFightClub
                 CmdNotifyDeath();
         }
 
-        public void ResetState()
+        public void ResetState(int spawnIndex)
         {
-            _currentHealth = 0;
-
+            Debug.Log("resetting state");
+            CmdResetPlayerState(spawnIndex);
         }
 
         void OnGUI()
@@ -120,6 +120,14 @@ namespace DokiDokiFightClub
         }
 
         #region Commands
+        [Command]
+        private void CmdResetPlayerState(int spawnIndex)
+        {
+            _currentHealth = 0;
+            Transform spawnPosition = NetworkManager.startPositions[spawnIndex];
+            transform.SetPositionAndRotation(spawnPosition.position, spawnPosition.rotation);
+        }
+
         [Command]
         private void CmdNotifyDeath()
         {
