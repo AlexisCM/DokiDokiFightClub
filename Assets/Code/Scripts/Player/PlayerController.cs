@@ -107,7 +107,7 @@ namespace DokiDokiFightClub
             Vector2 inputVec = PlayerInputActions.Player.Movement.ReadValue<Vector2>();
             _moveDirection = transform.right * inputVec.x + transform.forward * inputVec.y;
 
-            Controller.Move(_moveDirection * _moveSpeed * Time.deltaTime);
+            Controller.Move(_moveSpeed * Time.deltaTime * _moveDirection);
             _velocity.y += _gravity * Time.deltaTime;
             Controller.Move(_velocity * Time.deltaTime);
         }

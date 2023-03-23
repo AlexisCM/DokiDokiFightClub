@@ -9,7 +9,6 @@ namespace DokiDokiFightClub
         public PlayerInput PlayerInput; // Handles player inputs (KMB or Gamepad)
         public Weapon ActiveWeapon;     // Player's active weapon
         public PlayerStats Stats;       // Player's stats for the current match (kills/deaths/damage/etc)
-        //public GameManager MatchMgrInstance; // Instance of the GameManager attached to this player's match
         public int ClientMatchIndex = -1;
 
         #region SyncVars
@@ -92,6 +91,14 @@ namespace DokiDokiFightClub
                 Die(attackingPlayer);
         }
 
+        public void ResetState(Transform spawnPoint)
+        {
+            ToggleComponents(false);
+            _currentHealth = _maxHealth;
+            gameObject.transform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
+            ToggleComponents(true);
+        }
+
         private void Die(Player attackingPlayer)
         {
             Stats.AddDeath();
@@ -99,12 +106,6 @@ namespace DokiDokiFightClub
 
             if (authority)
                 CmdNotifyDeath();
-        }
-
-        public void ResetState(int spawnIndex)
-        {
-            Debug.Log("resetting state");
-            CmdResetPlayerState(spawnIndex);
         }
 
         void OnGUI()
@@ -119,21 +120,23 @@ namespace DokiDokiFightClub
             }
         }
 
-        #region Commands
-        [Command]
-        private void CmdResetPlayerState(int spawnIndex)
+        /// <summary>
+        /// Activates/Deactivates the Components, depending on whether isActive is true/false.
+        /// </summary>
+        /// <param name="isActive"></param>
+        private void ToggleComponents(bool isActive)
         {
-            _currentHealth = 0;
-            Transform spawnPosition = NetworkManager.startPositions[spawnIndex];
-            transform.SetPositionAndRotation(spawnPosition.position, spawnPosition.rotation);
+            GetComponent<PlayerController>().enabled = isActive;
+            GetComponent<CharacterController>().enabled = isActive;
         }
+
+        #region Commands
 
         [Command]
         private void CmdNotifyDeath()
         {
-            Debug.LogWarning(_networkManager.GameManagers.Count);
             // Notify GameManager that the player died, so the round can end
-            _networkManager.GameManagers[MatchId].PlayerDeath(gameObject);
+            _networkManager.MatchManagers[MatchId].PlayerDeath(gameObject);
         }
         #endregion
     }

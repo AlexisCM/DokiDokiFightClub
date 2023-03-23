@@ -16,7 +16,11 @@ namespace DokiDokiFightClub
 
         private DdfcNetworkManager _networkManager;
         private const int _maxRounds = 3;   // Maximum number of rounds played per match
+
+        [SyncVar]
         private int _roundsPlayed = 0;      // Current number of rounds played/completed
+
+        [SyncVar]
         private bool _isDoingWork = false;  // Flag for methods called in the update loop
 
         public void SetMatchInstanceId(int matchInstanceId)
@@ -62,33 +66,26 @@ namespace DokiDokiFightClub
             }
         }
 
+        public void PlayerDeath(GameObject playerObject)
+        {
+            // TODO: Keep track of players' round wins/losses
+            RoundEnded();
+        }
+
         private void RoundEnded()
         {
             _isDoingWork = true;
             ++_roundsPlayed;
-            // TODO: Handle players swapping sides of the map after rounds
 
             foreach (var playerObject in Players)
             {
                 var player = playerObject.GetComponent<Player>();
-                //TargetResetPlayerState(player.GetComponent<NetworkIdentity>().connectionToClient);
-                player.ResetState(GetPlayerSpawnIndex(player));
+                TargetResetPlayerState(player.GetComponent<NetworkIdentity>().connectionToClient);
             }
 
             Round.ResetRound();
             _isDoingWork = false;
         }
-
-        //[TargetRpc]
-        //private void TargetResetPlayerState(NetworkConnection conn)
-        //{
-        //    var player = conn.identity.gameObject.GetComponent<Player>();
-
-        //    int spawnIndex = GetPlayerSpawnIndex(player);
-        //    Transform spawnPosition  = NetworkManager.startPositions[spawnIndex];
-        //    player.transform.SetPositionAndRotation(spawnPosition.position, spawnPosition.rotation);
-        //    player.ResetState();
-        //}
 
         private void MatchEnded()
         {
@@ -119,5 +116,15 @@ namespace DokiDokiFightClub
             }
             return index;
         }
+
+        #region Remote Prodecure Calls
+        [TargetRpc]
+        private void TargetResetPlayerState(NetworkConnection conn)
+        {
+            var player = conn.identity.gameObject.GetComponent<Player>();
+            int spawnIndex = GetPlayerSpawnIndex(player);
+            player.ResetState(NetworkManager.startPositions[spawnIndex]);
+        }
+        #endregion
     }
 }

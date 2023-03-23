@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
-using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 
 namespace DokiDokiFightClub
@@ -17,8 +16,6 @@ namespace DokiDokiFightClub
         [Scene] public string UiScene; // Name of scene which holds UI
         public int MatchInstances = 2; // Number of simultaneous match instances allowed
         public readonly Dictionary<int, MatchManager> MatchManagers = new();
-
-        public readonly List<GameManager> GameManagers = new();
 
         bool _subscenesLoaded; // This is set true after server loads all subscene instances
         readonly List<Scene> _subscenes = new(); // subscenes are added to this list as they're loaded
@@ -46,7 +43,7 @@ namespace DokiDokiFightClub
             // Cache a reference to the current player object
             GameObject oldPlayer = conn.identity.gameObject;
             Transform spawnPoint = startPositions[spawnIndex];
-            GameObject newPlayer = Instantiate(InGamePlayerPrefab, spawnPoint.position, spawnPoint.localRotation);
+            GameObject newPlayer = Instantiate(InGamePlayerPrefab, spawnPoint.position, spawnPoint.rotation);
 
             // Instantiate the new player object and broadcast to clients
             // Include true for keepAuthority paramater to prevent ownership change
