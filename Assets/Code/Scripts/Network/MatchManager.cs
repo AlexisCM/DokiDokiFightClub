@@ -11,7 +11,7 @@ namespace DokiDokiFightClub
 
         public int MatchInstanceId { get; private set; }
         public bool WaitingForPlayers = true;
-        public List<GameObject> Players;
+        public List<Player> Players;
         internal Round Round { get; private set; } // Keeps track of current round's state
 
         private DdfcNetworkManager _networkManager;
@@ -34,7 +34,7 @@ namespace DokiDokiFightClub
             Round = GetComponent<Round>();
         }
 
-        public void StartMatch(List<GameObject> players)
+        public void StartMatch(List<Player> players)
         {
             Players = players;
             WaitingForPlayers = false;
@@ -66,9 +66,10 @@ namespace DokiDokiFightClub
             }
         }
 
-        public void PlayerDeath(GameObject playerObject)
+        public void PlayerDeath(int deadPlayerId, int sourcePlayerId)
         {
             // TODO: Keep track of players' round wins/losses
+            RpcLogMessage($"<color=red>Player#{deadPlayerId} was KILLED by Player#{sourcePlayerId}!</color>");
             RoundEnded();
         }
 
@@ -77,9 +78,8 @@ namespace DokiDokiFightClub
             _isDoingWork = true;
             ++_roundsPlayed;
 
-            foreach (var playerObject in Players)
+            foreach (var player in Players)
             {
-                var player = playerObject.GetComponent<Player>();
                 TargetResetPlayerState(player.GetComponent<NetworkIdentity>().connectionToClient);
             }
 
@@ -93,7 +93,6 @@ namespace DokiDokiFightClub
             // TODO: Determine the match winner
             StopAllCoroutines();
             // Transition player to match summary scene
-            Cursor.lockState = CursorLockMode.None;
             WaitingForPlayers = true;
             // Disconnect player clients, which will automatically send them back to the offline screen
         }
@@ -118,10 +117,23 @@ namespace DokiDokiFightClub
         }
 
         #region Remote Prodecure Calls
+        [ClientRpc]
+        private void RpcLogMessage(string msg)
+        {
+            Debug.Log(msg);
+        }
+
+        [TargetRpc]
+        private void TargetDamagePlayer(int damage)
+        {
+
+        }
+
         [TargetRpc]
         private void TargetResetPlayerState(NetworkConnection conn)
         {
-            var player = conn.identity.gameObject.GetComponent<Player>();
+            Debug.Log($"Round ended! {_roundsPlayed} rounds played.");
+            var player = conn.identity.GetComponent<Player>();
             int spawnIndex = GetPlayerSpawnIndex(player);
             player.ResetState(NetworkManager.startPositions[spawnIndex]);
         }

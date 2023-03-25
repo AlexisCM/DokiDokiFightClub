@@ -19,12 +19,12 @@ namespace DokiDokiFightClub
         public void StartRound()
         {
             IsOngoing = true;
-            StartCoroutine("StartTimer");
+            StartCoroutine(nameof(StartTimer));
         }
 
         public void ResetRound()
         {
-            StopCoroutine("StartTimer");
+            StopCoroutine(nameof(StartTimer));
             CurrentTime = _maxRoundDuration;
             IsOngoing = false;
         }

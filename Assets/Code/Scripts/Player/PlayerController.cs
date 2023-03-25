@@ -87,9 +87,8 @@ namespace DokiDokiFightClub
 
         private void Update()
         {
-            if (!isLocalPlayer)
-                return;
-            Move();
+            if (isLocalPlayer)
+                Move();
         }
 
         /// <summary>

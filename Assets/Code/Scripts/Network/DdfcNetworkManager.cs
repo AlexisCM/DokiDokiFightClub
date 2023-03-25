@@ -44,7 +44,6 @@ namespace DokiDokiFightClub
             GameObject oldPlayer = conn.identity.gameObject;
             Transform spawnPoint = startPositions[spawnIndex];
             GameObject newPlayer = Instantiate(InGamePlayerPrefab, spawnPoint.position, spawnPoint.rotation);
-
             // Instantiate the new player object and broadcast to clients
             // Include true for keepAuthority paramater to prevent ownership change
             NetworkServer.ReplacePlayerForConnection(conn, newPlayer, true);
@@ -139,7 +138,7 @@ namespace DokiDokiFightClub
             player.PlayerId = spawnIndex;
             player.MatchId = matchId;
 
-            MatchMaker.Instance.Matches[matchId].AddMatchPlayer(player.gameObject);
+            MatchMaker.Instance.Matches[matchId].AddMatchPlayer(player);
 
             // Do this only on server, not on clients
             // This is what allows the NetworkSceneChecker on player and scene objects
