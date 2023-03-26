@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
@@ -11,6 +10,8 @@ namespace DokiDokiFightClub
 
         public int MatchInstanceId { get; private set; }
         public bool WaitingForPlayers = true;
+
+        [SyncVar]
         public List<Player> Players;
         internal Round Round { get; private set; } // Keeps track of current round's state
 

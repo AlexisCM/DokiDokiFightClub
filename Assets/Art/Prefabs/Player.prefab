@@ -478,7 +478,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a63d9c9c085d8db459c79035ea4d5a29, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  syncDirection: 1
+  syncDirection: 0
   syncMode: 0
   syncInterval: 0
   PlayerInput: {fileID: 9167805898917521602}
@@ -491,6 +491,7 @@ MonoBehaviour:
   ComponentsToDisable:
   - {fileID: 9167805898917521605}
   - {fileID: 6875108623655771501}
+  - {fileID: 9167805898917521602}
 --- !u!114 &9167805898917521605
 MonoBehaviour:
   m_ObjectHideFlags: 0
