@@ -27,8 +27,8 @@ namespace DokiDokiFightClub
 
         InputMaster _playerInputActions; // Reference to Player inputs for attacking
 
-        [SerializeField]
-        Behaviour[] ComponentsToDisable; // Components to disable for non-local players
+        //[SerializeField]
+        //List<Behaviour> ComponentsToDisable; // Components to disable for non-local players
 
         private DdfcNetworkManager _networkManager;
 
@@ -44,10 +44,7 @@ namespace DokiDokiFightClub
 
         private void Start()
         {
-            _networkManager = NetworkManager.singleton as DdfcNetworkManager;
-
-            if (!isLocalPlayer)
-                ToggleComponents(false);
+            _networkManager = FindObjectOfType<DdfcNetworkManager>();
         }
 
         private void OnEnable()
@@ -122,8 +119,11 @@ namespace DokiDokiFightClub
         /// <param name="isActive"></param>
         private void ToggleComponents(bool isActive)
         {
-            for (int i = 0; i < ComponentsToDisable.Length; ++i)
-                ComponentsToDisable[i].enabled = isActive;
+            //for (int i = 0; i < ComponentsToDisable.Count; ++i)
+            //    ComponentsToDisable[i].enabled = isLocalPlayer && isActive;
+
+            GetComponent<PlayerController>().enabled = isActive;
+            GetComponent<CharacterController>().enabled = isActive;
         }
 
         #region Commands

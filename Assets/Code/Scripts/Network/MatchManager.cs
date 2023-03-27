@@ -11,7 +11,6 @@ namespace DokiDokiFightClub
         public int MatchInstanceId { get; private set; }
         public bool WaitingForPlayers = true;
 
-        [SyncVar]
         public List<Player> Players;
         internal Round Round { get; private set; } // Keeps track of current round's state
 
@@ -103,16 +102,16 @@ namespace DokiDokiFightClub
         /// </summary>
         /// <param name="player"></param>
         /// <returns></returns>
-        private int GetPlayerSpawnIndex(Player player)
+        private int GetPlayerSpawnIndex(int playerId)
         {
             int index;
             if (_roundsPlayed % 2 == 0)
             {
-                index = player.PlayerId;
+                index = playerId;
             }
             else
             {
-                index = (player.PlayerId == 0) ? 1 : 0;
+                index = (playerId == 0) ? 1 : 0;
             }
             return index;
         }
@@ -135,7 +134,7 @@ namespace DokiDokiFightClub
         {
             Debug.Log($"Round ended! {_roundsPlayed} rounds played.");
             var player = conn.identity.GetComponent<Player>();
-            int spawnIndex = GetPlayerSpawnIndex(player);
+            int spawnIndex = GetPlayerSpawnIndex(player.PlayerId);
             player.ResetState(NetworkManager.startPositions[spawnIndex]);
         }
         #endregion

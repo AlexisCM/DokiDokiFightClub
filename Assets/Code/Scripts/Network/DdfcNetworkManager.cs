@@ -50,7 +50,7 @@ namespace DokiDokiFightClub
 
             // Remove the previous player object that's now been replaced
             // Delay is required to allow replacement to complete.
-            Destroy(oldPlayer, 0.5f);
+            Destroy(oldPlayer, 0.1f);
         }
 
         public void RegisterMatchManager(Scene scene)

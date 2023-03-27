@@ -488,10 +488,6 @@ MonoBehaviour:
   MatchId: 0
   PlayerId: 0
   Score: 0
-  ComponentsToDisable:
-  - {fileID: 9167805898917521605}
-  - {fileID: 6875108623655771501}
-  - {fileID: 9167805898917521602}
 --- !u!114 &9167805898917521605
 MonoBehaviour:
   m_ObjectHideFlags: 0
