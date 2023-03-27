@@ -28,7 +28,7 @@ namespace DokiDokiFightClub
         {
             foreach (var player in match.QueuedPlayers)
             {
-                StartCoroutine(OnAddPlayersToMatch(match.MatchId, player.SpawnIndex, player.connectionToClient));
+                StartCoroutine(OnAddPlayersToMatch(match.MatchId, player.SpawnIndex, player.netIdentity.connectionToClient));
             }
 
             StartCoroutine(OnAllMatchPlayersReady(match.MatchId));
@@ -41,13 +41,12 @@ namespace DokiDokiFightClub
         public void ReplacePlayerPrefab(int spawnIndex, NetworkConnectionToClient conn)
         {
             // Cache a reference to the current player object
-            GameObject oldPlayer = conn.identity.gameObject;
-            Transform spawnPoint = startPositions[spawnIndex];
-            GameObject newPlayer = Instantiate(InGamePlayerPrefab, spawnPoint.position, spawnPoint.rotation);
+            var oldPlayer = conn.identity.gameObject;
+            var spawnPoint = startPositions[spawnIndex];
+            var newPlayer = Instantiate(InGamePlayerPrefab, spawnPoint.position, spawnPoint.rotation);
             // Instantiate the new player object and broadcast to clients
             // Include true for keepAuthority paramater to prevent ownership change
             NetworkServer.ReplacePlayerForConnection(conn, newPlayer, true);
-
             // Remove the previous player object that's now been replaced
             // Delay is required to allow replacement to complete.
             Destroy(oldPlayer, 0.1f);
@@ -59,6 +58,7 @@ namespace DokiDokiFightClub
             // Create MatchManager and assign the corresponding matchId
             MatchManager matchManager = Instantiate(MatchManagerPrefab).GetComponent<MatchManager>();
             matchManager.SetMatchInstanceId(i);
+            matchManager.name = $"MatchManager [matchId={i}]";
             MatchManagers[i] = matchManager;
 
             // Move into correct subscene
@@ -109,7 +109,6 @@ namespace DokiDokiFightClub
 
             yield return new WaitForEndOfFrame();
             MatchMaker.Instance.AddPlayerToQueue(conn);
-
         }
 
         /// <summary>
@@ -139,6 +138,7 @@ namespace DokiDokiFightClub
             Player player = conn.identity.GetComponent<Player>();
             player.PlayerId = spawnIndex;
             player.MatchId = matchId;
+            player.name = $"Player [id={spawnIndex}]";
 
             MatchMaker.Instance.Matches[matchId].AddMatchPlayer(player);
 

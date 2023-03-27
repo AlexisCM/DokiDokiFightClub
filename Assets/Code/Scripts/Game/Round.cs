@@ -8,7 +8,7 @@ namespace DokiDokiFightClub
         public float CurrentTime { get; private set; }   // Current time left in the round
         public bool IsOngoing { get; private set; }     // Flag for if the round is still in progress
 
-        private const float _maxRoundDuration = 4f;     // Maximum duration per round in seconds
+        private const float _maxRoundDuration = 60f;     // Maximum duration per round in seconds
 
         void Start()
         {

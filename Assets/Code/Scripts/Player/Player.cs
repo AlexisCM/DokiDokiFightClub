@@ -140,6 +140,7 @@ namespace DokiDokiFightClub
         private void CmdPlayerDamaged(int targetId, int damage, int sourceId)
         {
             var targetPlayer = _networkManager.MatchManagers[MatchId].Players[targetId];
+            Debug.Log($"targetPlayer isNull? {targetPlayer==null}");
             Debug.Log($"Player#{targetId} took {damage} DMG!");
             targetPlayer.RpcTakeDamage(damage, sourceId);
         }
