@@ -1,9 +1,11 @@
+using Mirror;
 using UnityEngine;
 
-public class HealthMetre : MonoBehaviour
+public class HealthMetre : NetworkBehaviour
 {
-    public int MaxHealth;
+    [SyncVar]
     public int CurrentHealth;
+    public int MaxHealth;
 
     private void Start()
     {
@@ -14,5 +16,6 @@ public class HealthMetre : MonoBehaviour
     public void Reset()
     {
         CurrentHealth = MaxHealth;
+        // TODO: Update Player Health UI
     }
 }

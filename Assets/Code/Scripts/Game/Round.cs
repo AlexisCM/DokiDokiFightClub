@@ -8,7 +8,7 @@ namespace DokiDokiFightClub
         public float CurrentTime { get; private set; }   // Current time left in the round
         public bool IsOngoing { get; private set; }     // Flag for if the round is still in progress
 
-        private const float _maxRoundDuration = 3f;     // Maximum duration per round in seconds
+        private const float _maxRoundDuration = 60f;     // Maximum duration per round in seconds
 
         void Start()
         {
@@ -19,12 +19,12 @@ namespace DokiDokiFightClub
         public void StartRound()
         {
             IsOngoing = true;
-            StartCoroutine("StartTimer");
+            StartCoroutine(nameof(StartTimer));
         }
 
         public void ResetRound()
         {
-            StopCoroutine("StartTimer");
+            StopCoroutine(nameof(StartTimer));
             CurrentTime = _maxRoundDuration;
             IsOngoing = false;
         }
