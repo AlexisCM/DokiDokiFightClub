@@ -7,8 +7,13 @@ using UnityEngine.Networking;
 
 public class FitbitApi : MonoBehaviour
 {
-    private const string _clientSecret = "";
-    private const string _clientId = "";
+    private static readonly string FITBIT_ACCESS_TOKEN_KEY = "FitbitAccessToken";
+    private static readonly string FITBIT_REFRESH_TOKEN_KEY = "FitbitRefreshToken";
+    private static readonly string FITBIT_TOKEN_TYPE_KEY = "FitbitTokenType";
+    private static readonly string FITBIT_EXPIRES_IN_KEY = "FitbitExpiresIn";
+
+    private const string _clientSecret = "12b706e315d43b5f43098c1a43ed846f";
+    private const string _clientId = "238Z37";
 
     // URLs
     private const string _tokenUrl = "https://api.fitbit.com/oauth2/token";
@@ -21,9 +26,9 @@ public class FitbitApi : MonoBehaviour
     // URI arguments
     private const string _codeChallMethod = "S256";
     // Proof of Key for Code Exchance (PKCE) Code Verifier:
-    private const string _codeVerifier = "";
-    private const string _codeChallenge = ""; // Base64-encoded SHA-256 transformation of Code Verifier
-    private const string _state = "";
+    private const string _codeVerifier = "6g1u3v4j6v7343031y194p12000u194h7067094a4n1j6s430q124s28572r234p0u6w702r140l276j4k4e330q1t1024196221496u3k1q531968326c6l4g0n4a4u";
+    private const string _codeChallenge = "pRCLUfrJ6nwUxeRI3MVia8_AL5rYQFbxBn6qsJnYfUA"; // Base64-encoded SHA-256 transformation of Code Verifier
+    private const string _state = "586y3d1c4y0m2x6x4j28571u253m3p0p";
     private const string _scopeParams = "heartrate+sleep";
 
     // Response Codes
@@ -47,16 +52,10 @@ public class FitbitApi : MonoBehaviour
         DontDestroyOnLoad(this);
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
-
     public void LoginToFitbit()
     {
         // Check if the user has a refresh token stored in PlayerPrefs
-        if (PlayerPrefs.HasKey("FitbitRefreshToken"))
+        if (PlayerPrefs.HasKey(FITBIT_REFRESH_TOKEN_KEY))
         {
             UseRefreshToken();
         }
@@ -101,7 +100,7 @@ public class FitbitApi : MonoBehaviour
 
     public void UseRefreshToken()
     {
-        var refreshToken = PlayerPrefs.GetString("FitbitRefreshToken");
+        var refreshToken = PlayerPrefs.GetString(FITBIT_REFRESH_TOKEN_KEY);
 
         // Create request body
         var form = new WWWForm();
@@ -161,7 +160,7 @@ public class FitbitApi : MonoBehaviour
                 Debug.Log($"REQUEST FAILED: {req.error}\n{req.downloadHandler.text}");
 
             // Refresh token didn't exist or has expired
-            PlayerPrefs.DeleteKey("FitbitRefreshToken");
+            PlayerPrefs.DeleteKey(FITBIT_REFRESH_TOKEN_KEY);
             _onRequestCompletion += AuthorizeFitbitUser;
             _onRequestCompletion.Invoke(); // Call AuthorizeFitbitUser to generate new tokens
             _onRequestCompletion = null;
@@ -176,11 +175,10 @@ public class FitbitApi : MonoBehaviour
         }
     }
 
-    private void GetHeartRateData()
+    public void GetHeartRateData()
     {
-        var authToken = "Bearer " + PlayerPrefs.GetString("FitbitAccessToken");
+        var authToken = "Bearer " + PlayerPrefs.GetString(FITBIT_ACCESS_TOKEN_KEY);
         var request = UnityWebRequest.Get(GetHeartRateIntradayUrl());
-        //var request = UnityWebRequest.Get(_baseHeartRateUrl);
         request.SetRequestHeader("authorization", authToken);
 
         StartCoroutine(WaitForHeartRateData(request));
@@ -189,14 +187,16 @@ public class FitbitApi : MonoBehaviour
     private void TokensHandler()
     {
         // Store Fitbit API tokens
-        PlayerPrefs.SetString("FitbitAccessToken", _oAuth2.access_token);
-        PlayerPrefs.SetString("FitbitRefreshToken", _oAuth2.refresh_token);
-        PlayerPrefs.SetString("FitbitTokenType", _oAuth2.token_type);
-        PlayerPrefs.SetInt("FitbitExpiresIn", _oAuth2.expires_in);
+        PlayerPrefs.SetString(FITBIT_ACCESS_TOKEN_KEY, _oAuth2.access_token);
+        PlayerPrefs.SetString(FITBIT_REFRESH_TOKEN_KEY, _oAuth2.refresh_token);
+        PlayerPrefs.SetString(FITBIT_TOKEN_TYPE_KEY, _oAuth2.token_type);
+        PlayerPrefs.SetInt(FITBIT_EXPIRES_IN_KEY, _oAuth2.expires_in);
 
         GetHeartRateData();
     }
 
+    /// <summary>Allows data to be managed after being fetched from Fitbit API.</summary>
+    /// <param name="hrData"></param>
     private void FetchedDataHandler(FitbitHeartRateData hrData)
     {
         Debug.Log(hrData.ToString());
