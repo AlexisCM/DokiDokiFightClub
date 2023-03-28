@@ -2053,8 +2053,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _heartbeatSource: {fileID: 2061588949}
-  _currentVolumePct: 0
-  CurrentHr: 0
+  currentHr: 80
 --- !u!1 &2098483338
 GameObject:
   m_ObjectHideFlags: 0

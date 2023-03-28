@@ -1,5 +1,3 @@
-using Unity.VisualScripting;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 namespace DokiDokiFightClub
@@ -22,12 +20,8 @@ namespace DokiDokiFightClub
         public void Start()
         {
             _fitbitApi = FindObjectOfType<FitbitApi>();
-
-            // TODO: Get player's resting HR from Fitbit API
-            _restingHeartRate = 50;
             _heartRateScaler = new HeartRateScaler(_restingHeartRate, _defaultVolumePct);
             _heartbeatSource.volume = _defaultVolumePct;
-
         }
 
         public void Update()
@@ -41,6 +35,9 @@ namespace DokiDokiFightClub
         /// <summary>Retrieve updated heart rate data to convert into audio effects.</summary>
         public void UpdateHeartRate()
         {
+            // TODO: Set HR data in Start method once script is moved onto Networked Player Object
+            _restingHeartRate = _fitbitApi.GetRestingHeartRate();
+            Debug.Log($"<color=green>Resting HR = {_restingHeartRate}bpm</color>");
             // TODO: Get HR data using Fitbit API
             ConvertAudioLevels(currentHr);
         }
