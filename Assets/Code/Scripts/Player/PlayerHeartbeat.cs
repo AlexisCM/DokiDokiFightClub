@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 namespace DokiDokiFightClub
@@ -5,11 +6,17 @@ namespace DokiDokiFightClub
     [RequireComponent(typeof(AudioSource))]
     public class PlayerHeartbeat : MonoBehaviour
     {
+        [Header("SFX Settings")]
         [SerializeField]
         AudioSource _heartbeatSource;
 
-        readonly float _defaultVolumePct = 0.5f;
+        [SerializeField]
+        float _defaultVolumePct = 0.3f;
 
+        [SerializeField]
+        float _defaultMinPitchPct = 1f;
+
+        [Header("Player Heart Rate Values")]
         [SerializeField]
         int currentHr = 80;
 
@@ -22,10 +29,14 @@ namespace DokiDokiFightClub
             _fitbitApi = FindObjectOfType<FitbitApi>();
             _heartRateScaler = new HeartRateScaler(_restingHeartRate, _defaultVolumePct);
             _heartbeatSource.volume = _defaultVolumePct;
+            _heartbeatSource.pitch = _defaultMinPitchPct;
+
+            StartCoroutine(PlayHeartbeatSfx());
         }
 
         public void Update()
         {
+            // TESTING! REMOVE LATER! ----------------------------------------------------
             if (Input.GetKeyDown(KeyCode.Space))
             {
                 UpdateHeartRate();
@@ -38,30 +49,54 @@ namespace DokiDokiFightClub
             // TODO: Set HR data in Start method once script is moved onto Networked Player Object
             _restingHeartRate = _fitbitApi.GetRestingHeartRate();
             Debug.Log($"<color=green>Resting HR = {_restingHeartRate}bpm</color>");
-            // TODO: Get HR data using Fitbit API
+            // TODO: Get current HR data using Fitbit API
             ConvertAudioLevels(currentHr);
         }
 
         private void ConvertAudioLevels(int updatedHeartRate)
         {
             var mappedAudioLevel = _heartRateScaler.MapToAudioLevel(updatedHeartRate);
+            var mappedPlaybackSpeed = _heartRateScaler.MapToPlaybackSpeed(updatedHeartRate);
             _heartbeatSource.volume = mappedAudioLevel;
+            _heartbeatSource.pitch = mappedPlaybackSpeed;
+        }
+
+        private IEnumerator PlayHeartbeatSfx()
+        {
+            while (_heartbeatSource.clip.loadState != AudioDataLoadState.Loaded)
+                yield return null;
+            _heartbeatSource.Play();
+        }
+
+        private void OnDisable()
+        {
+            StopAllCoroutines();
+        }
+
+        private void OnDestroy()
+        {
+            StopAllCoroutines();
         }
     }
 
+    /// <summary>
+    /// Scales the heart rate value between the desired targets based on what the its expected min. and max. measurements.
+    /// </summary>
     internal class HeartRateScaler
     {
         readonly int _measuredMin = 50; // Minimum range of the measured Heart Rate
         readonly int _measuredMax = 150; // Maximum range of the measured Heart Rate
-        readonly float _targetMin = 0.5f; // Minimum Range of the target scaling (Volume)
-        readonly float _targetMax = 1.0f; // Maximum Range of the target scaling (Volume)
+        readonly float _targetMinVolume = 0.5f; // Minimum Range of the target scaling (Volume)
+        readonly float _targetMaxVolume = 1.0f; // Maximum Range of the target scaling (Volume)
+        readonly float _targetMinPitch = 1f; // Minimum Range of the target scaling (Pitch)
+        readonly float _targetMaxPitch = 1.9f; // Maximum Range of the target scaling (Pitch)
 
         /// <param name="measuredMin">Minimum range of the measured Heart Rate. Set this value to the player's Resting Heart Rate.</param>
         /// <param name="targetMin">Minimum Range of the target scaling (Volume). Set this value to the default Heart Rate SFX volume.</param>
         public HeartRateScaler(int measuredMin, float targetMin)
         {
             _measuredMin = measuredMin;
-            _targetMin = targetMin;
+            _targetMinVolume = targetMin;
         }
 
         /// <summary>Scales the heartRate to an inverval of the minimum and maximum Volume levels.</summary>
@@ -72,10 +107,17 @@ namespace DokiDokiFightClub
         {
             float scaled;
             scaled = (heartRate - _measuredMin) / (_measuredMax - _measuredMin);
-            scaled *= _targetMax - _targetMin;
-            scaled += _targetMin;
+            scaled *= _targetMaxVolume - _targetMinVolume;
+            scaled += _targetMinVolume;
+            return scaled;
+        }
 
-            Debug.Log($"Mapped HR Value = {scaled}");
+        public float MapToPlaybackSpeed(float heartRate)
+        {
+            float scaled;
+            scaled = (heartRate - _measuredMin) / (_measuredMax - _measuredMin);
+            scaled *= _targetMaxPitch - _targetMinPitch;
+            scaled += _targetMinPitch;
             return scaled;
         }
     }

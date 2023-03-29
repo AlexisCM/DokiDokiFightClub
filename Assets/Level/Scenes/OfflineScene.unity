@@ -521,6 +521,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 92d0faaa9a6db6b44b63fdeb0dbc1269, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  DefaultRestingHr: 60
 --- !u!1 &1169666652
 GameObject:
   m_ObjectHideFlags: 0
@@ -2000,7 +2001,7 @@ AudioSource:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 0
+      value: 1
       inSlope: 0
       outSlope: 0
       tangentMode: 0
@@ -2053,6 +2054,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _heartbeatSource: {fileID: 2061588949}
+  _defaultVolumePct: 0.3
+  _defaultMinPitchPct: 1
   currentHr: 80
 --- !u!1 &2098483338
 GameObject:
