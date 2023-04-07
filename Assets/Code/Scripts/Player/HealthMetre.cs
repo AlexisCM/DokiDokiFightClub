@@ -1,18 +1,31 @@
 using Mirror;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace DokiDokiFightClub
 {
     public class HealthMetre : NetworkBehaviour
     {
+        // Delegate to update subscribers and handle behaviour when health reaches zero
+        public delegate void HealthZeroHandler();
+        public event HealthZeroHandler OnHealthZero;
+
         private const int _maxHealth = 100;
 
         [SyncVar(hook = nameof(HandleHealthUpdated))]
         private int _health;
 
-        // Delegate to update subscribers and handle behaviour when health reaches zero
-        public delegate void HealthZeroHandler();
-        public event HealthZeroHandler OnHealthZero;
+        [SerializeField]
+        private GameObject _healthMetreUI; // The game object that contains the UI for the health bar
+
+        [SerializeField]
+        private Slider _healthSlider; // Slider that controls the health bar on screen
+
+        [SerializeField]
+        private Image _healthFill; // The actual image to change when the health value updates
+
+        [SerializeField]
+        private Gradient _damageGradient; // Changes colour of the slider based on its current value
 
         public override void OnStartServer()
         {
@@ -20,12 +33,33 @@ namespace DokiDokiFightClub
             _health = _maxHealth;
         }
 
-        private void HandleHealthUpdated(int oldValue, int newValue)
+        public override void OnStartLocalPlayer()
         {
-            // TODO: Handle health UI
+            base.OnStartLocalPlayer();
+            InitializeUI();
+        }
 
-            if (isLocalPlayer)
-                Debug.Log($"New health value: {newValue}");
+        private void InitializeUI()
+        {
+            _healthMetreUI.SetActive(true);
+
+            _healthSlider.minValue = 0;
+            _healthSlider.maxValue = _maxHealth;
+            _healthSlider.wholeNumbers = true;
+
+            _healthSlider.value = _maxHealth;
+
+            // Set color of gradient to the one assigned for 100%
+            _healthFill.color = _damageGradient.Evaluate(1f);
+        }
+
+        public void HandleHealthUpdated(int oldValue, int newValue)
+        {
+            if (!isLocalPlayer)
+                return;
+            // TODO: Handle health UI
+            _healthSlider.value = newValue;
+            _healthFill.color = _damageGradient.Evaluate(_healthSlider.normalizedValue);
         }
 
         [Server]
@@ -52,6 +86,7 @@ namespace DokiDokiFightClub
         public void ResetValue()
         {
             _health = _maxHealth;
+            // Don't need to change UI here because of SyncVar hook
         }
     }
 
