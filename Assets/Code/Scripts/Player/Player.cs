@@ -90,11 +90,18 @@ namespace DokiDokiFightClub
 
         #endregion
 
+        /// <summary>Reset the player's health and set transform to new spawn point.</summary>
+        /// <param name="spawnPoint"></param>
         public void ResetState(Transform spawnPoint)
         {
+            // Prevent player input from interfering
             ToggleComponents(false);
-            Health.Reset();
+
+            // Reset player health value and respawn location
+            CmdOnResetState();
             transform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
+
+            // Re-enable player input/controls
             ToggleComponents(true);
         }
 
@@ -136,6 +143,12 @@ namespace DokiDokiFightClub
             {
                 health.Remove(damageDealt);
             }
+        }
+
+        [Command]
+        private void CmdOnResetState()
+        {
+            Health.ResetValue();
         }
         #endregion
     }

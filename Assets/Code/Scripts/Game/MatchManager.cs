@@ -80,7 +80,7 @@ namespace DokiDokiFightClub
 
             foreach (var player in Players)
             {
-                TargetResetPlayerState(player.GetComponent<NetworkIdentity>().connectionToClient);
+                TargetResetPlayerState(player.connectionToClient);
             }
 
             Round.ResetRound();
@@ -124,7 +124,7 @@ namespace DokiDokiFightClub
         {
             Debug.Log($"Round ended! {_roundsPlayed} rounds played.");
             var player = conn.identity.GetComponent<Player>();
-            int spawnIndex = GetPlayerSpawnIndex(player.PlayerId);
+            var spawnIndex = GetPlayerSpawnIndex(player.PlayerId);
             player.ResetState(NetworkManager.startPositions[spawnIndex]);
         }
         #endregion

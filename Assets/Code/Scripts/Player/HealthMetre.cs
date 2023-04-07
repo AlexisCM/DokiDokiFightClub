@@ -28,14 +28,14 @@ namespace DokiDokiFightClub
                 Debug.Log($"New health value: {newValue}");
         }
 
-        //[Server]
-        //public void Add(int value)
-        //{
-        //    // Ensure negative values cannot be assigned
-        //    value = Mathf.Max(value, 0);
-        //    // Ensure new health value cannot exceed Max Health
-        //    _health = Mathf.Min(_health + value, _maxHealth);
-        //}
+        [Server]
+        public void Add(int value)
+        {
+            // Ensure negative values cannot be assigned
+            value = Mathf.Max(value, 0);
+            // Ensure new health value cannot exceed Max Health
+            _health = Mathf.Min(_health + value, _maxHealth);
+        }
 
         [Server]
         public void Remove(int value)
@@ -49,7 +49,7 @@ namespace DokiDokiFightClub
         }
 
         [Server]
-        public void Reset()
+        public void ResetValue()
         {
             _health = _maxHealth;
         }
