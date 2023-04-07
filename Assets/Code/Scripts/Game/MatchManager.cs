@@ -66,10 +66,10 @@ namespace DokiDokiFightClub
             }
         }
 
-        public void PlayerDeath(int deadPlayerId, int sourcePlayerId)
+        public void PlayerDeath(int deadPlayerId)
         {
             // TODO: Keep track of players' round wins/losses
-            RpcLogMessage($"<color=red>Player#{deadPlayerId} was KILLED by Player#{sourcePlayerId}!</color>");
+            RpcLogMessage($"<color=red>Player#{deadPlayerId} was KILLED!</color>");
             RoundEnded();
         }
 
@@ -97,11 +97,7 @@ namespace DokiDokiFightClub
             // Disconnect player clients, which will automatically send them back to the offline screen
         }
 
-        /// <summary>
-        /// If the number of rounds played is odd, the player must swap spawn positions.
-        /// </summary>
-        /// <param name="player"></param>
-        /// <returns></returns>
+        /// <summary> If the number of rounds played is odd, the player must swap spawn positions. </summary>
         private int GetPlayerSpawnIndex(int playerId)
         {
             int index;
@@ -121,12 +117,6 @@ namespace DokiDokiFightClub
         private void RpcLogMessage(string msg)
         {
             Debug.Log(msg);
-        }
-
-        [TargetRpc]
-        private void TargetDamagePlayer(int damage)
-        {
-
         }
 
         [TargetRpc]

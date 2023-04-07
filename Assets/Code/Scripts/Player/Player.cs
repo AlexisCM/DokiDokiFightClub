@@ -1,5 +1,4 @@
 using Mirror;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -8,7 +7,7 @@ namespace DokiDokiFightClub
     public class Player : NetworkBehaviour
     {
         public PlayerInput PlayerInput; // Handles player inputs (KMB or Gamepad)
-        public HealthMetre HealthMetre; // Handles player's Max and Current Health
+        public HealthMetre Health;      // Handles player's Max and Current Health
         public Weapon ActiveWeapon;     // Player's active weapon
         public PlayerStats Stats;       // Player's stats for the current match (kills/deaths/damage/etc)
 
@@ -21,16 +20,10 @@ namespace DokiDokiFightClub
 
         [SyncVar]
         public uint Score;
-
         #endregion
 
-
-        InputMaster _playerInputActions; // Reference to Player inputs for attacking
-
-        //[SerializeField]
-        //List<Behaviour> ComponentsToDisable; // Components to disable for non-local players
-
-        private DdfcNetworkManager _networkManager;
+        private InputMaster _playerInputActions;    // Reference to Player inputs for attacking
+        private DdfcNetworkManager _networkManager; // Reference to NetworkManager's singleton instance
 
         private void Awake()
         {
@@ -44,7 +37,11 @@ namespace DokiDokiFightClub
 
         private void Start()
         {
-            _networkManager = FindObjectOfType<DdfcNetworkManager>();
+            //_networkManager = FindObjectOfType<DdfcNetworkManager>();
+            _networkManager = NetworkManager.singleton as DdfcNetworkManager;
+
+            // Subscribe to the OnHealthZero event to handle player death
+            Health.OnHealthZero += Die;
         }
 
         private void OnEnable()
@@ -61,17 +58,21 @@ namespace DokiDokiFightClub
 
         #region Input Action Callbacks
 
-        [Client]        
+        [Client]
         public void QuickAttack(InputAction.CallbackContext context)
         {
-            // Play attack animation
+            if (!isLocalPlayer || !ActiveWeapon.CanAttack)
+                return;
+
+            // TODO: Play attack animation
+
             // Check if weapon collides with an enemy
             Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
 
-            if (Physics.Raycast(ray, out RaycastHit hit) && hit.transform.TryGetComponent(out Player enemy) && ActiveWeapon.CanAttack)
+            if (Physics.Raycast(ray, out RaycastHit hit) && hit.transform.TryGetComponent(out Player enemy))
             {
                 Debug.Log($"Quick ATK!");
-                CmdPlayerDamaged(enemy.PlayerId, ActiveWeapon.QuickAttack(), PlayerId);
+                CmdOnPerformAttack(enemy, ActiveWeapon.QuickAttack());
             }
             else
             {
@@ -86,22 +87,26 @@ namespace DokiDokiFightClub
             // Check if weapon collides with an enemy
             Debug.Log("HEAVY attack!");
         }
+
         #endregion
 
         public void ResetState(Transform spawnPoint)
         {
             ToggleComponents(false);
-            HealthMetre.Reset();
+            Health.Reset();
             transform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
             ToggleComponents(true);
         }
 
-        private void Die(int sourceId)
+        private void Die()
         {
-            Stats.AddDeath();
-            _networkManager.MatchManagers[MatchId].Players[sourceId].Stats.AddKill();
+            // Disable player input and movement
+            ToggleComponents(false);
 
-            CmdOnPlayerDeath(PlayerId, sourceId);
+            // TODO: trigger death animation
+            // TODO: display round winner/loser (might be handled as rpc on MatchManager
+            // TODO: update player stats
+            _networkManager.MatchManagers[MatchId].PlayerDeath(PlayerId);
         }
 
         void OnGUI()
@@ -113,43 +118,24 @@ namespace DokiDokiFightClub
             }
         }
 
-        /// <summary>
-        /// Activates/Deactivates the Components, depending on whether isActive is true/false.
-        /// </summary>
+        /// <summary> Activates/Deactivates the Components, depending on whether isActive is true/false. </summary>
         /// <param name="isActive"></param>
         private void ToggleComponents(bool isActive)
         {
-            //for (int i = 0; i < ComponentsToDisable.Count; ++i)
-            //    ComponentsToDisable[i].enabled = isLocalPlayer && isActive;
-
+            PlayerInput.enabled = isActive;
             GetComponent<PlayerController>().enabled = isActive;
             GetComponent<CharacterController>().enabled = isActive;
         }
 
         #region Commands
-
-        [ClientRpc]
-        public void RpcTakeDamage(int damage, int sourceId)
-        {
-            HealthMetre.CurrentHealth -= damage;
-            if (HealthMetre.CurrentHealth <= 0)
-                Die(sourceId);
-        }
-
         [Command]
-        private void CmdPlayerDamaged(int targetId, int damage, int sourceId)
+        private void CmdOnPerformAttack(Player target, int damageDealt)
         {
-            var targetPlayer = _networkManager.MatchManagers[MatchId].Players[targetId];
-            Debug.Log($"targetPlayer isNull? {targetPlayer==null}");
-            Debug.Log($"Player#{targetId} took {damage} DMG!");
-            targetPlayer.RpcTakeDamage(damage, sourceId);
-        }
-
-        [Command]
-        private void CmdOnPlayerDeath(int targetId, int sourceId)
-        {
-            // Notify GameManager that the player died, so the round can end
-            _networkManager.MatchManagers[MatchId].PlayerDeath(targetId, sourceId);
+            // Send command to server to damage enemy player
+            if (target.TryGetComponent(out HealthMetre health))
+            {
+                health.Remove(damageDealt);
+            }
         }
         #endregion
     }

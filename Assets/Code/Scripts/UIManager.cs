@@ -1,3 +1,4 @@
+using Mirror;
 using UnityEngine;
 
 namespace DokiDokiFightClub
@@ -11,7 +12,7 @@ namespace DokiDokiFightClub
 
         private void Start()
         {
-            _networkManager = FindObjectOfType<DdfcNetworkManager>();
+            _networkManager = NetworkManager.singleton as DdfcNetworkManager;
         }
 
         #region Offline Scene UI
