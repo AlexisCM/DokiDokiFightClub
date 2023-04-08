@@ -10,6 +10,7 @@ namespace DokiDokiFightClub
         public HealthMetre Health;      // Handles player's Max and Current Health
         public Weapon ActiveWeapon;     // Player's active weapon
         public PlayerStats Stats;       // Player's stats for the current match (kills/deaths/damage/etc)
+        public PlayerUiManager PlayerUi;
 
         #region SyncVars
         [SyncVar]
@@ -101,6 +102,10 @@ namespace DokiDokiFightClub
             CmdOnResetState();
             transform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
 
+            // Turn off round-over UI for local player
+            if (isLocalPlayer)
+                PlayerUi.ToggleRoundOver(false);
+
             // Re-enable player input/controls
             ToggleComponents(true);
         }
@@ -135,6 +140,13 @@ namespace DokiDokiFightClub
         }
 
         #region Commands
+        [TargetRpc]
+        public void TargetDisplayRoundOver(NetworkConnectionToClient conn, bool isWinner)
+        {
+            if (isLocalPlayer)
+                PlayerUi.ToggleRoundOver(true, isWinner);
+        }
+
         [Command]
         private void CmdOnPerformAttack(Player target, int damageDealt)
         {

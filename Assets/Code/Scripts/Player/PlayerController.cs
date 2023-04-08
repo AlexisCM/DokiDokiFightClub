@@ -119,7 +119,6 @@ namespace DokiDokiFightClub
         {
             if (context.performed && Controller.isGrounded)
             {
-                Debug.Log("jumpman jumpman jumpman jumpman--");
                 _velocity.y = Mathf.Sqrt(_jumpHeight * -3f * _gravity);
             }
         }

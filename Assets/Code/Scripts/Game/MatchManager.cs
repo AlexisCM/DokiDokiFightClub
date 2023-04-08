@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
@@ -16,12 +17,15 @@ namespace DokiDokiFightClub
 
         private DdfcNetworkManager _networkManager;
         private const int _maxRounds = 3;   // Maximum number of rounds played per match
+        private const float _timeBetweenRounds = 5f;
 
         [SyncVar]
         private int _roundsPlayed = 0;      // Current number of rounds played/completed
 
         [SyncVar]
         private bool _isDoingWork = false;  // Flag for methods called in the update loop
+
+        private readonly SyncList<int> _roundWinner = new();
 
         public void SetMatchInstanceId(int matchInstanceId)
         {
@@ -49,7 +53,7 @@ namespace DokiDokiFightClub
             // Check if round ended
             if (Round.CurrentTime <= 0)
             {
-                RoundEnded();
+                StartCoroutine(RoundEnded(null));
             }
 
             // Round is over
@@ -70,16 +74,33 @@ namespace DokiDokiFightClub
         {
             // TODO: Keep track of players' round wins/losses
             RpcLogMessage($"<color=red>Player#{deadPlayerId} was KILLED!</color>");
-            RoundEnded();
+            StartCoroutine(RoundEnded(deadPlayerId));
         }
 
-        private void RoundEnded()
+        private IEnumerator RoundEnded(int? deadPlayerId)
         {
             _isDoingWork = true;
             ++_roundsPlayed;
 
+            // Invoke delegate?
+
+            //// Delay before new round begins
+            //yield return new WaitForSeconds(_timeBetweenRounds);
+            yield return null;
+
             foreach (var player in Players)
             {
+                //// TODO: determine which player wins when time runs out (when deadPlayerId is null)
+                //if (deadPlayerId != null && deadPlayerId != player.PlayerId)
+                //{
+                //    _roundWinner.Add(player.PlayerId);
+                //    player.TargetDisplayRoundOver(player.connectionToClient, true);
+                //}
+                //else
+                //{
+                //    player.TargetDisplayRoundOver(player.connectionToClient, false);
+                //}
+
                 TargetResetPlayerState(player.connectionToClient);
             }
 
