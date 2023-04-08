@@ -7,23 +7,27 @@ using UnityEngine.Networking;
 
 namespace DokiDokiFightClub
 {
-    struct InitialData
+    public struct PlayerHeartRateData
     {
         public float RestingHeartRate;
+        public int CurrentHeartRate;
     }
 
     public class FitbitApi : MonoBehaviour
     {
         /// <summary>Default value to use when Fitbit API fails to retrieve data.</summary>
-        public int DefaultRestingHr = 60;
+        public readonly int DefaultRestingHr = 60;
+
+        /// <summary>Default value to use when Fitbit API fails to retrieve data.</summary>
+        public readonly int DefaultHeartRate = 80;
 
         private static readonly string FITBIT_ACCESS_TOKEN_KEY = "FitbitAccessToken";
         private static readonly string FITBIT_REFRESH_TOKEN_KEY = "FitbitRefreshToken";
         private static readonly string FITBIT_TOKEN_TYPE_KEY = "FitbitTokenType";
         private static readonly string FITBIT_EXPIRES_IN_KEY = "FitbitExpiresIn";
 
-        private const string _clientSecret = "";
-        private const string _clientId = "";
+        private const string _clientSecret = "12b706e315d43b5f43098c1a43ed846f";
+        private const string _clientId = "238Z37";
 
         // URLs
         private const string _tokenUrl = "https://api.fitbit.com/oauth2/token";
@@ -33,12 +37,12 @@ namespace DokiDokiFightClub
         private const string _baseHeartRateUrl = "https://api.fitbit.com/1/user/-/activities/heart/date/today/today/1sec/time/";
 
         // URI arguments
+        private const string _scopeParams = "heartrate+sleep";
         private const string _codeChallMethod = "S256";
         // Proof of Key for Code Exchance (PKCE) Code Verifier:
-        private const string _codeVerifier = "";
-        private const string _codeChallenge = ""; // Base64-encoded SHA-256 transformation of Code Verifier
-        private const string _state = "";
-        private const string _scopeParams = "heartrate+sleep";
+        private const string _codeVerifier = "6g1u3v4j6v7343031y194p12000u194h7067094a4n1j6s430q124s28572r234p0u6w702r140l276j4k4e330q1t1024196221496u3k1q531968326c6l4g0n4a4u";
+        private const string _codeChallenge = "pRCLUfrJ6nwUxeRI3MVia8_AL5rYQFbxBn6qsJnYfUA"; // Base64-encoded SHA-256 transformation of Code Verifier
+        private const string _state = "586y3d1c4y0m2x6x4j28571u253m3p0p";
 
         // Response Codes
         private string _returnCode; // The code returned from API after successful call
@@ -49,7 +53,8 @@ namespace DokiDokiFightClub
 
         private OAuth2AccessToken _oAuth2;  // Represents JSON data returned from Fitbit auth request
 
-        private InitialData _initialData; // Holds the player's initially retrieved heart rate data prior to match-making
+        private PlayerHeartRateData _playerHeartData;
+        private bool _isDataRetrieved = false;
 
         private void Awake()
         {
@@ -126,12 +131,22 @@ namespace DokiDokiFightClub
         }
 
         /// <summary>Returns the user's resting HR via Fitbit API. Should that fail, return a default value.</summary>
-        /// <returns></returns>
         public int GetRestingHeartRate()
         {
-            int value = (int)Mathf.Round(_initialData.RestingHeartRate);
+            int value = (int)Mathf.Round(_playerHeartData.RestingHeartRate);
             int restingHr = value == 0 ? DefaultRestingHr : value;
             return restingHr;
+        }
+
+        /// <summary>Returns the average heart rate of all values recently retrieved by Fitbit API. Should that fail, return a default value.</summary>
+        public int GetCurrentHeartRate()
+        {
+            _isDataRetrieved = false;
+            // Dirty dirty hack
+            while (!_isDataRetrieved)
+                continue;
+
+            return _playerHeartData.CurrentHeartRate;
         }
 
         IEnumerator WaitForRequest(UnityWebRequest req)
@@ -201,6 +216,7 @@ namespace DokiDokiFightClub
             var request = UnityWebRequest.Get(GetHeartRateIntradayUrl());
             request.SetRequestHeader("authorization", authToken);
 
+            _isDataRetrieved = false;
             StartCoroutine(WaitForHeartRateData(request));
         }
 
@@ -220,7 +236,27 @@ namespace DokiDokiFightClub
         private void FetchedDataHandler(FitbitHeartRateData hrData)
         {
             Debug.Log(hrData.ToString());
-            _initialData.RestingHeartRate = float.Parse(hrData.ActivitiesHearts[0].value);
+            
+            // Returns a list of all heart rates
+            var heartIntradays = hrData.ActivitiesHeartIntradays.dataset;
+            var restingHr = float.Parse(hrData.ActivitiesHearts[0].value);
+            var avgHeartRate = 0;
+            for (int i = 0; i < heartIntradays.Count; ++i)
+            {
+                avgHeartRate += heartIntradays[i].value;
+            }
+
+            if (heartIntradays.Count == 0)
+                avgHeartRate = DefaultHeartRate;
+            else
+                avgHeartRate /= heartIntradays.Count;
+
+            // Store player's current heart rate and resting heart rate
+            _playerHeartData.CurrentHeartRate = avgHeartRate;
+            _playerHeartData.RestingHeartRate = restingHr == 0 ? DefaultHeartRate : restingHr;
+
+            // Set flag to true so waiting functions can use the data
+            _isDataRetrieved = true;
         }
 
         /// <summary>

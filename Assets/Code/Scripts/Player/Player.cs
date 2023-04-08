@@ -10,6 +10,7 @@ namespace DokiDokiFightClub
         public HealthMetre Health;      // Handles player's Max and Current Health
         public Weapon ActiveWeapon;     // Player's active weapon
         public PlayerStats Stats;       // Player's stats for the current match (kills/deaths/damage/etc)
+        public PlayerHeartbeat Heartbeat;
         public PlayerUiManager PlayerUi;
 
         #region SyncVars
@@ -103,8 +104,8 @@ namespace DokiDokiFightClub
             transform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
 
             // Turn off round-over UI for local player
-            if (isLocalPlayer)
-                PlayerUi.ToggleRoundOver(false);
+            //if (isLocalPlayer)
+            //    PlayerUi.ToggleRoundOver(false);
 
             // Re-enable player input/controls
             ToggleComponents(true);

@@ -1,10 +1,11 @@
+using Mirror;
 using System.Collections;
 using UnityEngine;
 
 namespace DokiDokiFightClub
 {
     [RequireComponent(typeof(AudioSource))]
-    public class PlayerHeartbeat : MonoBehaviour
+    public class PlayerHeartbeat : NetworkBehaviour
     {
         [Header("SFX Settings")]
         [SerializeField]
@@ -18,7 +19,7 @@ namespace DokiDokiFightClub
 
         [Header("Player Heart Rate Values")]
         [SerializeField]
-        int currentHr = 80;
+        int _currentHr = 80;
 
         private FitbitApi _fitbitApi;
         private HeartRateScaler _heartRateScaler;
@@ -31,16 +32,25 @@ namespace DokiDokiFightClub
             _heartbeatSource.volume = _defaultVolumePct;
             _heartbeatSource.pitch = _defaultMinPitchPct;
 
-            StartCoroutine(PlayHeartbeatSfx());
+            _restingHeartRate = _fitbitApi.GetRestingHeartRate();
+
+            // Heart rate SFX should only play from the remote player's object
+            if (!isLocalPlayer)
+                Initialize();
         }
 
-        public void Update()
+        //public void Update()
+        //{
+        //    // TESTING! REMOVE LATER! ----------------------------------------------------
+        //    if (Input.GetKeyDown(KeyCode.Space))
+        //    {
+        //        UpdateHeartRate();
+        //    }
+        //}
+
+        private void Initialize()
         {
-            // TESTING! REMOVE LATER! ----------------------------------------------------
-            if (Input.GetKeyDown(KeyCode.Space))
-            {
-                UpdateHeartRate();
-            }
+            StartCoroutine(PlayHeartbeatSfx());
         }
 
         /// <summary>Retrieve updated heart rate data to convert into audio effects.</summary>
@@ -49,8 +59,9 @@ namespace DokiDokiFightClub
             // TODO: Set HR data in Start method once script is moved onto Networked Player Object
             _restingHeartRate = _fitbitApi.GetRestingHeartRate();
             Debug.Log($"<color=green>Resting HR = {_restingHeartRate}bpm</color>");
-            // TODO: Get current HR data using Fitbit API
-            ConvertAudioLevels(currentHr);
+
+            _currentHr = _fitbitApi.GetCurrentHeartRate();
+            ConvertAudioLevels(_currentHr);
         }
 
         private void ConvertAudioLevels(int updatedHeartRate)
