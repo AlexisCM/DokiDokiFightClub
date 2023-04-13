@@ -16,18 +16,18 @@ namespace DokiDokiFightClub
     public class FitbitApi : MonoBehaviour
     {
         /// <summary>Default value to use when Fitbit API fails to retrieve data.</summary>
-        public readonly int DefaultRestingHr = 60;
+        public readonly int DefaultRestingHr = 70;
 
         /// <summary>Default value to use when Fitbit API fails to retrieve data.</summary>
-        public readonly int DefaultHeartRate = 80;
+        public readonly int DefaultHeartRate = 100;
 
-        private static readonly string FITBIT_ACCESS_TOKEN_KEY = "FitbitAccessToken";
-        private static readonly string FITBIT_REFRESH_TOKEN_KEY = "FitbitRefreshToken";
-        private static readonly string FITBIT_TOKEN_TYPE_KEY = "FitbitTokenType";
-        private static readonly string FITBIT_EXPIRES_IN_KEY = "FitbitExpiresIn";
+        public static readonly string FITBIT_ACCESS_TOKEN_KEY = "FitbitAccessToken";
+        public static readonly string FITBIT_REFRESH_TOKEN_KEY = "FitbitRefreshToken";
+        public static readonly string FITBIT_TOKEN_TYPE_KEY = "FitbitTokenType";
+        public static readonly string FITBIT_EXPIRES_IN_KEY = "FitbitExpiresIn";
 
-        private const string _clientSecret = "12b706e315d43b5f43098c1a43ed846f";
-        private const string _clientId = "238Z37";
+        private const string _clientSecret = "";
+        private const string _clientId = "";
 
         // URLs
         private const string _tokenUrl = "https://api.fitbit.com/oauth2/token";
@@ -38,31 +38,22 @@ namespace DokiDokiFightClub
 
         // URI arguments
         private const string _scopeParams = "heartrate+sleep";
-        private const string _codeChallMethod = "S256";
+        private const string _codeChallMethod = "";
         // Proof of Key for Code Exchance (PKCE) Code Verifier:
-        private const string _codeVerifier = "6g1u3v4j6v7343031y194p12000u194h7067094a4n1j6s430q124s28572r234p0u6w702r140l276j4k4e330q1t1024196221496u3k1q531968326c6l4g0n4a4u";
-        private const string _codeChallenge = "pRCLUfrJ6nwUxeRI3MVia8_AL5rYQFbxBn6qsJnYfUA"; // Base64-encoded SHA-256 transformation of Code Verifier
-        private const string _state = "586y3d1c4y0m2x6x4j28571u253m3p0p";
+        private const string _codeVerifier = "";
+        private const string _codeChallenge = ""; // Base64-encoded SHA-256 transformation of Code Verifier
+        private const string _state = "";
 
         // Response Codes
         private string _returnCode; // The code returned from API after successful call
 
-        // Event Handlers
-        private Action _onRequestCompletion;
-        private Action<FitbitHeartRateData> _onGetHeartRateSuccess;
-
         private OAuth2AccessToken _oAuth2;  // Represents JSON data returned from Fitbit auth request
 
         private PlayerHeartRateData _playerHeartData;
+
+        // Ensures methods don't return until data is properly retrieved
         private bool _isDataRetrieved = false;
 
-        private void Awake()
-        {
-            // Subscribe methods to event handlers
-            _onGetHeartRateSuccess += FetchedDataHandler;
-        }
-
-        // Start is called before the first frame update
         void Start()
         {
             DontDestroyOnLoad(this);
@@ -81,9 +72,7 @@ namespace DokiDokiFightClub
             }
         }
 
-        /// <summary>
-        /// Direct user to the browser, where they must login to fitbit account and authorize use of data.
-        /// </summary>
+        /// <summary> Direct user to the browser, where they must login to fitbit account and authorize use of data. </summary>
         public void AuthorizeFitbitUser()
         {
             var authorizationUrl = $"{_oAuth2Url}&client_id={_clientId}&response_type=code&code_challenge={_codeChallenge}&" +
@@ -142,6 +131,8 @@ namespace DokiDokiFightClub
         public int GetCurrentHeartRate()
         {
             _isDataRetrieved = false;
+            GetHeartRateData();
+
             // Dirty dirty hack
             while (!_isDataRetrieved)
                 continue;
@@ -161,9 +152,7 @@ namespace DokiDokiFightClub
             {
                 _oAuth2 = JsonUtility.FromJson<OAuth2AccessToken>(req.downloadHandler.text);
                 // Perform callback on success
-                _onRequestCompletion += TokensHandler;
-                _onRequestCompletion.Invoke();
-                _onRequestCompletion = null;
+                TokensHandler();
             }
         }
 
@@ -179,7 +168,7 @@ namespace DokiDokiFightClub
             {
                 FitbitHeartRateData hrData = JsonConvert.DeserializeObject<FitbitHeartRateData>(req.downloadHandler.text);
                 Debug.Log(req.downloadHandler.text);
-                _onGetHeartRateSuccess.Invoke(hrData);
+                FetchedDataHandler(hrData);
             }
         }
 
@@ -196,17 +185,14 @@ namespace DokiDokiFightClub
 
                 // Refresh token didn't exist or has expired
                 PlayerPrefs.DeleteKey(FITBIT_REFRESH_TOKEN_KEY);
-                _onRequestCompletion += AuthorizeFitbitUser;
-                _onRequestCompletion.Invoke(); // Call AuthorizeFitbitUser to generate new tokens
-                _onRequestCompletion = null;
+                // Call AuthorizeFitbitUser to generate new tokens
+                AuthorizeFitbitUser();
             }
             else
             {
                 // Request succeeded with refresh token
                 _oAuth2 = JsonUtility.FromJson<OAuth2AccessToken>(req.downloadHandler.text);
-                _onRequestCompletion += TokensHandler;
-                _onRequestCompletion.Invoke();
-                _onRequestCompletion = null;
+                TokensHandler();
             }
         }
 

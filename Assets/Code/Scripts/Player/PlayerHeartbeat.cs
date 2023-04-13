@@ -63,6 +63,7 @@ namespace DokiDokiFightClub
         }
 
         /// <summary>Update the heartbeat SFX of the enemy game object for the local client.</summary>
+        [Client]
         private void ConvertAudioLevels(int oldHeartRate, int newHeartRate)
         {
             if (isLocalPlayer)
