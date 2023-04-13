@@ -17,13 +17,14 @@ namespace DokiDokiFightClub
         [SerializeField]
         float _defaultMinPitchPct = 1f;
 
-        [Header("Player Heart Rate Values")]
-        [SerializeField]
-        int _currentHr = 80;
+        [SyncVar(hook = nameof(ConvertAudioLevels))]
+        private int _currentHr;
+
+        [SyncVar]
+        private int _restingHeartRate;
 
         private FitbitApi _fitbitApi;
         private HeartRateScaler _heartRateScaler;
-        private int _restingHeartRate;
 
         public void Start()
         {
@@ -32,7 +33,8 @@ namespace DokiDokiFightClub
             _heartbeatSource.volume = _defaultVolumePct;
             _heartbeatSource.pitch = _defaultMinPitchPct;
 
-            _restingHeartRate = _fitbitApi.GetRestingHeartRate();
+            if (isLocalPlayer)
+                CmdOnSetRestingHr();
 
             // Heart rate SFX should only play from the remote player's object
             if (!isLocalPlayer)
@@ -56,18 +58,18 @@ namespace DokiDokiFightClub
         /// <summary>Retrieve updated heart rate data to convert into audio effects.</summary>
         public void UpdateHeartRate()
         {
-            // TODO: Set HR data in Start method once script is moved onto Networked Player Object
-            _restingHeartRate = _fitbitApi.GetRestingHeartRate();
-            Debug.Log($"<color=green>Resting HR = {_restingHeartRate}bpm</color>");
-
-            _currentHr = _fitbitApi.GetCurrentHeartRate();
-            ConvertAudioLevels(_currentHr);
+            // TODO: call this method after the round ends.
+            CmdOnUpdateHeartRate();
         }
 
-        private void ConvertAudioLevels(int updatedHeartRate)
+        /// <summary>Update the heartbeat SFX of the enemy game object for the local client.</summary>
+        private void ConvertAudioLevels(int oldHeartRate, int newHeartRate)
         {
-            var mappedAudioLevel = _heartRateScaler.MapToAudioLevel(updatedHeartRate);
-            var mappedPlaybackSpeed = _heartRateScaler.MapToPlaybackSpeed(updatedHeartRate);
+            if (isLocalPlayer)
+                return;
+
+            var mappedAudioLevel = _heartRateScaler.MapToAudioLevel(newHeartRate);
+            var mappedPlaybackSpeed = _heartRateScaler.MapToPlaybackSpeed(newHeartRate);
             _heartbeatSource.volume = mappedAudioLevel;
             _heartbeatSource.pitch = mappedPlaybackSpeed;
         }
@@ -88,11 +90,24 @@ namespace DokiDokiFightClub
         {
             StopAllCoroutines();
         }
+
+        #region Commands
+        [Command]
+        private void CmdOnSetRestingHr()
+        {
+            _restingHeartRate = _fitbitApi.GetRestingHeartRate();
+        }
+
+        [Command]
+        private void CmdOnUpdateHeartRate()
+        {
+            Debug.Log($"<color=green>Resting HR = {_restingHeartRate}bpm</color>");
+            _currentHr = _fitbitApi.GetCurrentHeartRate();
+        }
+        #endregion
     }
 
-    /// <summary>
-    /// Scales the heart rate value between the desired targets based on what the its expected min. and max. measurements.
-    /// </summary>
+    /// <summary>  Scales the heart rate value between the desired targets based on what the its expected min. and max. measurements.</summary>
     internal class HeartRateScaler
     {
         readonly int _measuredMin = 50; // Minimum range of the measured Heart Rate

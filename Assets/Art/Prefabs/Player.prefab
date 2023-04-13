@@ -1575,6 +1575,7 @@ MonoBehaviour:
   Health: {fileID: -8446929481043836453}
   ActiveWeapon: {fileID: 8945838036527400409}
   Stats: {fileID: 2323544791785265290}
+  Heartbeat: {fileID: 291020697251555390}
   PlayerUi: {fileID: 4747617686249687437}
   MatchId: 0
   PlayerId: 0
@@ -1690,10 +1691,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f43f5fb49325b1d44bd276713d1d4a58, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0.1
   _heartbeatSource: {fileID: 6398919246707849775}
   _defaultVolumePct: 0.3
   _defaultMinPitchPct: 1
-  currentHr: 80
+  _currentHr: 80
 --- !u!82 &6398919246707849775
 AudioSource:
   m_ObjectHideFlags: 0
@@ -1704,18 +1708,18 @@ AudioSource:
   m_Enabled: 1
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
-  m_audioClip: {fileID: 0}
-  m_PlayOnAwake: 1
+  m_audioClip: {fileID: 8300000, guid: 7b0b34eddbb4ce143aa9d056c8e4d444, type: 3}
+  m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
-  Loop: 0
+  Loop: 1
   Mute: 0
   Spatialize: 0
   SpatializePostEffects: 0
   Priority: 128
   DopplerLevel: 1
   MinDistance: 1
-  MaxDistance: 500
+  MaxDistance: 2
   Pan2D: 0
   rolloffMode: 0
   BypassEffects: 0
@@ -1750,7 +1754,7 @@ AudioSource:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 0
+      value: 1
       inSlope: 0
       outSlope: 0
       tangentMode: 0
@@ -1765,7 +1769,7 @@ AudioSource:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 0
+      value: 0.00027777778
       inSlope: 0
       outSlope: 0
       tangentMode: 0

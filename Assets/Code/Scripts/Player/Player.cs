@@ -103,6 +103,9 @@ namespace DokiDokiFightClub
             CmdOnResetState();
             transform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
 
+            // Update current heart rate value
+            Heartbeat.UpdateHeartRate();
+
             // Turn off round-over UI for local player
             //if (isLocalPlayer)
             //    PlayerUi.ToggleRoundOver(false);
