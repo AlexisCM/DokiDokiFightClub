@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Mirror;
+using TMPro;
 using UnityEngine;
 
 namespace DokiDokiFightClub
@@ -8,16 +9,19 @@ namespace DokiDokiFightClub
     [RequireComponent(typeof(Round))]
     public class MatchManager : NetworkBehaviour
     {
-
         public int MatchInstanceId { get; private set; }
         public bool WaitingForPlayers = true;
 
         public List<Player> Players;
+
         internal Round Round { get; private set; } // Keeps track of current round's state
 
         private DdfcNetworkManager _networkManager;
         private const int _maxRounds = 3;   // Maximum number of rounds played per match
         private const float _timeBetweenRounds = 5f;
+
+        [SerializeField]
+        private TMP_Text _timerTextObj;
 
         [SyncVar]
         private int _roundsPlayed = 0;      // Current number of rounds played/completed
@@ -55,6 +59,10 @@ namespace DokiDokiFightClub
             {
                 StartCoroutine(RoundEnded(null));
             }
+            else
+            {
+                RpcUpdateTimer(Round.CurrentTime);
+            }
 
             // Round is over
             if (!Round.IsOngoing && _roundsPlayed < _maxRounds)
@@ -80,6 +88,7 @@ namespace DokiDokiFightClub
         private IEnumerator RoundEnded(int? deadPlayerId)
         {
             _isDoingWork = true;
+            Round.IsOngoing = false;
             ++_roundsPlayed;
 
             // Display Round Victory/Defeat UI
@@ -139,6 +148,12 @@ namespace DokiDokiFightClub
         private void RpcLogMessage(string msg)
         {
             Debug.Log(msg);
+        }
+
+        [ClientRpc]
+        private void RpcUpdateTimer(float time)
+        {
+            _timerTextObj.text = $"{time}";
         }
 
         [TargetRpc]

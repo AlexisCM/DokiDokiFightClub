@@ -2059,7 +2059,6 @@ MonoBehaviour:
   _heartbeatSource: {fileID: 2061588949}
   _defaultVolumePct: 0.3
   _defaultMinPitchPct: 1
-  _currentHr: 80
 --- !u!114 &2061588951
 MonoBehaviour:
   m_ObjectHideFlags: 0

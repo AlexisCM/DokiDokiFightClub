@@ -113,8 +113,17 @@ namespace DokiDokiFightClub
                 Debug.Log("whiff");
             }
         }
-
         #endregion
+
+        [Client]
+        public void DisplayRoundOverUi(bool isWinner)
+        {
+            // Prevent player input from interfering
+            ToggleComponents(false);
+
+            if (isLocalPlayer)
+                PlayerUi.ToggleRoundOver(true, isWinner);
+        }
 
         /// <summary>Reset the player's health and set transform to new spawn point.</summary>
         /// <param name="spawnPoint"></param>
@@ -167,24 +176,7 @@ namespace DokiDokiFightClub
             GetComponent<CharacterController>().enabled = isActive;
         }
 
-        [Client]
-        public void DisplayRoundOverUi(bool isWinner)
-        {
-            // Prevent player input from interfering
-            ToggleComponents(false);
-
-            Debug.Log("DisplayRoundOverUi");
-            if (isLocalPlayer)
-                PlayerUi.ToggleRoundOver(true, isWinner);
-        }
-
         #region Commands
-        //[TargetRpc]
-        //public void TargetDisplayRoundOver(NetworkConnectionToClient conn, bool isWinner)
-        //{
-        //    if (isLocalPlayer)
-        //        PlayerUi.ToggleRoundOver(true, isWinner);
-        //}
 
         [Command]
         private void CmdOnPerformAttack(Player target, int damageDealt)
