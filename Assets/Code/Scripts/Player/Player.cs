@@ -131,8 +131,8 @@ namespace DokiDokiFightClub
             Heartbeat.UpdateHeartRate();
 
             // Turn off round-over UI for local player
-            //if (isLocalPlayer)
-            //    PlayerUi.ToggleRoundOver(false);
+            if (isLocalPlayer)
+                PlayerUi.ToggleRoundOver(false);
 
             // Re-enable player input/controls
             ToggleComponents(true);
@@ -167,13 +167,24 @@ namespace DokiDokiFightClub
             GetComponent<CharacterController>().enabled = isActive;
         }
 
-        #region Commands
-        [TargetRpc]
-        public void TargetDisplayRoundOver(NetworkConnectionToClient conn, bool isWinner)
+        [Client]
+        public void DisplayRoundOverUi(bool isWinner)
         {
+            // Prevent player input from interfering
+            ToggleComponents(false);
+
+            Debug.Log("DisplayRoundOverUi");
             if (isLocalPlayer)
                 PlayerUi.ToggleRoundOver(true, isWinner);
         }
+
+        #region Commands
+        //[TargetRpc]
+        //public void TargetDisplayRoundOver(NetworkConnectionToClient conn, bool isWinner)
+        //{
+        //    if (isLocalPlayer)
+        //        PlayerUi.ToggleRoundOver(true, isWinner);
+        //}
 
         [Command]
         private void CmdOnPerformAttack(Player target, int damageDealt)

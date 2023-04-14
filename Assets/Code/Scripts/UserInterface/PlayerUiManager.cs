@@ -19,11 +19,8 @@ public class PlayerUiManager : MonoBehaviour
     [SerializeField]
     private TMP_Text _roundOverText;
 
-    private Color _victoryColour = new (73, 188, 117);
-    private Color _defeatColour = new(226, 57, 57);
-
-    private Color _victoryBgColour = new(73, 188, 117, 80);
-    private Color _defeatBgColour = new(226, 57, 57, 80);
+    private Color32 _victoryBgColour = new(73, 188, 117, 80);
+    private Color32 _defeatBgColour = new(226, 57, 57, 80);
 
     private readonly string _roundVictoryText = "Round Victory";
     private readonly string _roundDefeatText = "Round Defeat";

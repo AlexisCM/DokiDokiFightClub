@@ -420,6 +420,8 @@ MonoBehaviour:
   _roundOverObject: {fileID: 3523024051215894900}
   _roundOverBackground: {fileID: 1853448437102401880}
   _roundOverText: {fileID: 3718985771221630252}
+  _victoryMaterial: {fileID: 2100000, guid: 5a0b92aa7416ffa429419f18f54c45b1, type: 2}
+  _defeatMaterial: {fileID: 2100000, guid: 323ec4c40dfd5d94183f8cb6ac1c934a, type: 2}
 --- !u!1 &3523024051215894900
 GameObject:
   m_ObjectHideFlags: 0
@@ -1097,7 +1099,7 @@ MonoBehaviour:
   m_BlockingObjects: 0
   m_BlockingMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 0
 --- !u!1 &8926627266848111423
 GameObject:
   m_ObjectHideFlags: 0
@@ -1697,7 +1699,6 @@ MonoBehaviour:
   _heartbeatSource: {fileID: 6398919246707849775}
   _defaultVolumePct: 0.3
   _defaultMinPitchPct: 1
-  _currentHr: 80
 --- !u!82 &6398919246707849775
 AudioSource:
   m_ObjectHideFlags: 0

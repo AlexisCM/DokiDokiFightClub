@@ -82,25 +82,26 @@ namespace DokiDokiFightClub
             _isDoingWork = true;
             ++_roundsPlayed;
 
-            // Invoke delegate?
-
-            //// Delay before new round begins
-            //yield return new WaitForSeconds(_timeBetweenRounds);
-            yield return null;
-
+            // Display Round Victory/Defeat UI
             foreach (var player in Players)
             {
-                //// TODO: determine which player wins when time runs out (when deadPlayerId is null)
-                //if (deadPlayerId != null && deadPlayerId != player.PlayerId)
-                //{
-                //    _roundWinner.Add(player.PlayerId);
-                //    player.TargetDisplayRoundOver(player.connectionToClient, true);
-                //}
-                //else
-                //{
-                //    player.TargetDisplayRoundOver(player.connectionToClient, false);
-                //}
+                if (deadPlayerId != null && deadPlayerId != player.PlayerId)
+                {
+                    _roundWinner.Add(player.PlayerId);
+                    TargetDisplayRoundOver(player.connectionToClient, true);
+                }
+                else
+                {
+                    TargetDisplayRoundOver(player.connectionToClient, false);
+                }
+            }
 
+            // Delay before new round begins; allow UI time to be displayed
+            yield return new WaitForSeconds(_timeBetweenRounds);
+
+            // Reset player state and remove Round Over UI
+            foreach (var player in Players)
+            {
                 TargetResetPlayerState(player.connectionToClient);
             }
 
@@ -147,6 +148,13 @@ namespace DokiDokiFightClub
             var player = conn.identity.GetComponent<Player>();
             var spawnIndex = GetPlayerSpawnIndex(player.PlayerId);
             player.ResetState(NetworkManager.startPositions[spawnIndex]);
+        }
+
+        [TargetRpc]
+        private void TargetDisplayRoundOver(NetworkConnection conn, bool isWinner)
+        {
+            var player = conn.identity.GetComponent<Player>();
+            player.DisplayRoundOverUi(isWinner);
         }
         #endregion
     }
