@@ -24,7 +24,7 @@ namespace DokiDokiFightClub
 
         public override string ToString()
         {
-            string str = $"size: {ActivitiesHearts.Count}\n";
+            string str = string.Empty;
             foreach (ActivitiesHeart activity in ActivitiesHearts)
                 str += activity.ToString();
             return str;

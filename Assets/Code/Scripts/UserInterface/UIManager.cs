@@ -21,6 +21,13 @@ namespace DokiDokiFightClub
         /// </summary>
         public void OnPlayButton()
         {
+            if (!PlayerPrefs.HasKey(FitbitApi.FITBIT_REFRESH_TOKEN_KEY) || 
+                !PlayerPrefs.HasKey(FitbitApi.FITBIT_ACCESS_TOKEN_KEY))
+            {
+                // TODO: display error message to user; they must login to fitbit first
+                //return;
+            }
+
             _networkManager.StartClient();
         }
         #endregion

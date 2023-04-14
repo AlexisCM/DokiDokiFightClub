@@ -10,30 +10,22 @@ namespace DokiDokiFightClub
         
         public bool CanAttack { get; private set; }
 
+        private float _heavyAtkDmgMulitplier;
+
         private void Start()
         {
             CanAttack = true;
-            BaseDamage = 50;
+            BaseDamage = 40;
             BaseAttackSpeed = 1f;
+            _heavyAtkDmgMulitplier = 1.75f;
         }
-
+        
+        /// <summary>Starts a coroutine to apply attack speed delay between consecutive attacks.</summary>
+        /// <returns>Weapon's base damage value.</returns>
         public int QuickAttack()
         {
-            // TODO: Add attack speed delay. Coroutine?
             StartCoroutine(PerformAttack(BaseAttackSpeed));
             return BaseDamage;
-
-            //Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
-
-            //if (Physics.Raycast(ray, out RaycastHit hit) && hit.transform.TryGetComponent(out Player enemy))
-            //{
-            //    enemy.TakeDamage(thisPlayer, BaseDamage);
-            //    thisPlayer.Stats.AddDamageDealt(BaseDamage);
-            //}
-            //else
-            //{
-            //    Debug.Log("whiff");
-            //}
         }
 
         IEnumerator PerformAttack(float attackSpeed)
@@ -44,16 +36,13 @@ namespace DokiDokiFightClub
             CanAttack = true;
         }
 
-        public void HeavyAttack()
+        /// <summary>Starts a coroutine to apply attack speed delay between consecutive attacks.</summary>
+        /// <returns>Weapon's base damage multiplied by the heavy attack damage modifier.</returns>
+        public int HeavyAttack()
         {
-
-        }
-
-        void OnDrawGizmosSelected()
-        {
-            // Draws a 5 unit long red line in front of the object
-            Gizmos.color = Color.red;
-            Gizmos.DrawRay(Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0)));
+            var heavyAtkDmg = BaseDamage * _heavyAtkDmgMulitplier;
+            StartCoroutine(PerformAttack(BaseAttackSpeed * 2f));
+            return (int) heavyAtkDmg;
         }
     }
 }

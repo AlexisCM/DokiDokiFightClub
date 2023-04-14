@@ -10,6 +10,8 @@ namespace DokiDokiFightClub
         public HealthMetre Health;      // Handles player's Max and Current Health
         public Weapon ActiveWeapon;     // Player's active weapon
         public PlayerStats Stats;       // Player's stats for the current match (kills/deaths/damage/etc)
+        public PlayerHeartbeat Heartbeat;
+        public PlayerUiManager PlayerUi;
 
         #region SyncVars
         [SyncVar]
@@ -42,6 +44,17 @@ namespace DokiDokiFightClub
 
             // Subscribe to the OnHealthZero event to handle player death
             Health.OnHealthZero += Die;
+
+            // Name player objects in the hierarchy for ease of debugging
+            if (isLocalPlayer)
+            {
+                name = $"Player [id = {PlayerId}]";
+            }
+            else
+            {
+                var id = PlayerId == 0 ? 1 : 0;
+                name = $"Player [id = {id}]";
+            }
         }
 
         private void OnEnable()
@@ -83,18 +96,45 @@ namespace DokiDokiFightClub
         [Client]
         public void HeavyAttack(InputAction.CallbackContext context)
         {
+            if (!isLocalPlayer || !ActiveWeapon.CanAttack)
+                return;
             // Play attack animation
             // Check if weapon collides with an enemy
-            Debug.Log("HEAVY attack!");
+            // Check if weapon collides with an enemy
+            Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
+
+            if (Physics.Raycast(ray, out RaycastHit hit) && hit.transform.TryGetComponent(out Player enemy))
+            {
+                Debug.Log($"Heavy ATK!");
+                CmdOnPerformAttack(enemy, ActiveWeapon.HeavyAttack());
+            }
+            else
+            {
+                Debug.Log("whiff");
+            }
         }
 
         #endregion
 
+        /// <summary>Reset the player's health and set transform to new spawn point.</summary>
+        /// <param name="spawnPoint"></param>
         public void ResetState(Transform spawnPoint)
         {
+            // Prevent player input from interfering
             ToggleComponents(false);
-            Health.Reset();
+
+            // Reset player health value and respawn location
+            CmdOnResetState();
             transform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
+
+            // Update current heart rate value
+            Heartbeat.UpdateHeartRate();
+
+            // Turn off round-over UI for local player
+            //if (isLocalPlayer)
+            //    PlayerUi.ToggleRoundOver(false);
+
+            // Re-enable player input/controls
             ToggleComponents(true);
         }
 
@@ -128,6 +168,13 @@ namespace DokiDokiFightClub
         }
 
         #region Commands
+        [TargetRpc]
+        public void TargetDisplayRoundOver(NetworkConnectionToClient conn, bool isWinner)
+        {
+            if (isLocalPlayer)
+                PlayerUi.ToggleRoundOver(true, isWinner);
+        }
+
         [Command]
         private void CmdOnPerformAttack(Player target, int damageDealt)
         {
@@ -136,6 +183,12 @@ namespace DokiDokiFightClub
             {
                 health.Remove(damageDealt);
             }
+        }
+
+        [Command]
+        private void CmdOnResetState()
+        {
+            Health.ResetValue();
         }
         #endregion
     }
