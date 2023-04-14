@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using Mirror;
 using Newtonsoft.Json;
 using TMPro;
 using UnityEngine;
@@ -15,6 +16,9 @@ namespace DokiDokiFightClub
 
     public class FitbitApi : MonoBehaviour
     {
+        /// <summary>Singleton Instance</summary>
+        public static FitbitApi Instance { get; private set; }
+
         /// <summary>Default value to use when Fitbit API fails to retrieve data.</summary>
         public readonly int DefaultRestingHr = 70;
 
@@ -37,8 +41,8 @@ namespace DokiDokiFightClub
         private const string _baseHeartRateUrl = "https://api.fitbit.com/1/user/-/activities/heart/date/today/today/1sec/time/";
 
         // URI arguments
+        private const string _codeChallMethod = "S256";
         private const string _scopeParams = "heartrate+sleep";
-        private const string _codeChallMethod = "";
         // Proof of Key for Code Exchance (PKCE) Code Verifier:
         private const string _codeVerifier = "";
         private const string _codeChallenge = ""; // Base64-encoded SHA-256 transformation of Code Verifier
@@ -46,17 +50,25 @@ namespace DokiDokiFightClub
 
         // Response Codes
         private string _returnCode; // The code returned from API after successful call
-
         private OAuth2AccessToken _oAuth2;  // Represents JSON data returned from Fitbit auth request
+        private PlayerHeartRateData _playerHeartData; // Stores retrieved and parsed data
 
-        private PlayerHeartRateData _playerHeartData;
+        // delegate for handling data
+        public delegate void DataRetrievalHandler(int updatedHeartRate);
+        public event DataRetrievalHandler OnDataRetrieved;
 
-        // Ensures methods don't return until data is properly retrieved
-        private bool _isDataRetrieved = false;
-
-        void Start()
+        void Awake()
         {
-            DontDestroyOnLoad(this);
+            // Instantiate Singleton if no instance exists yet
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+            }
+            else
+            {
+                Instance = this;
+                DontDestroyOnLoad(this);
+            }
         }
 
         public void LoginToFitbit()
@@ -128,21 +140,22 @@ namespace DokiDokiFightClub
         }
 
         /// <summary>Returns the average heart rate of all values recently retrieved by Fitbit API. Should that fail, return a default value.</summary>
-        public int GetCurrentHeartRate()
+        public void GetCurrentHeartRate()
         {
-            _isDataRetrieved = false;
-            GetHeartRateData();
+            var authToken = "Bearer " + PlayerPrefs.GetString(FITBIT_ACCESS_TOKEN_KEY);
+            var request = UnityWebRequest.Get(GetHeartRateIntradayUrl());
+            request.SetRequestHeader("authorization", authToken);
 
-            // Dirty dirty hack
-            while (!_isDataRetrieved)
-                continue;
-
-            return _playerHeartData.CurrentHeartRate;
+            StartCoroutine(WaitForHeartRateData(request));
         }
 
         IEnumerator WaitForRequest(UnityWebRequest req)
         {
+            req.downloadHandler = new DownloadHandlerBuffer();
             yield return req.SendWebRequest();
+
+            while (!req.downloadHandler.isDone)
+                yield return new WaitForEndOfFrame();
 
             if (req.result != UnityWebRequest.Result.Success)
             {
@@ -151,14 +164,17 @@ namespace DokiDokiFightClub
             else
             {
                 _oAuth2 = JsonUtility.FromJson<OAuth2AccessToken>(req.downloadHandler.text);
-                // Perform callback on success
                 TokensHandler();
             }
         }
 
         IEnumerator WaitForHeartRateData(UnityWebRequest req)
         {
+            req.downloadHandler = new DownloadHandlerBuffer();
             yield return req.SendWebRequest();
+
+            while (!req.downloadHandler.isDone)
+                yield return new WaitForEndOfFrame();
 
             if (req.result != UnityWebRequest.Result.Success)
             {
@@ -174,8 +190,11 @@ namespace DokiDokiFightClub
 
         IEnumerator WaitForRefreshTokenRequest(UnityWebRequest req)
         {
+            req.downloadHandler = new DownloadHandlerBuffer();
             yield return req.SendWebRequest();
 
+            while (!req.downloadHandler.isDone)
+                yield return new WaitForEndOfFrame();
 
             if (req.result != UnityWebRequest.Result.Success)
             {
@@ -198,14 +217,15 @@ namespace DokiDokiFightClub
 
         private void GetHeartRateData()
         {
+            Debug.Log("FitbitApi.cs :: GetHeartRateData()");
             var authToken = "Bearer " + PlayerPrefs.GetString(FITBIT_ACCESS_TOKEN_KEY);
             var request = UnityWebRequest.Get(GetHeartRateIntradayUrl());
             request.SetRequestHeader("authorization", authToken);
 
-            _isDataRetrieved = false;
             StartCoroutine(WaitForHeartRateData(request));
         }
 
+        /// <summary> Set Access/Authorization Tokens in PlayerPrefs. </summary>
         private void TokensHandler()
         {
             // Store Fitbit API tokens
@@ -241,8 +261,8 @@ namespace DokiDokiFightClub
             _playerHeartData.CurrentHeartRate = avgHeartRate;
             _playerHeartData.RestingHeartRate = restingHr == 0 ? DefaultHeartRate : restingHr;
 
-            // Set flag to true so waiting functions can use the data
-            _isDataRetrieved = true;
+            if (OnDataRetrieved != null)
+                OnDataRetrieved.Invoke(_playerHeartData.CurrentHeartRate);
         }
 
         /// <summary>

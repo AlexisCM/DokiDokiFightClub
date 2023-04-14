@@ -44,6 +44,17 @@ namespace DokiDokiFightClub
 
             // Subscribe to the OnHealthZero event to handle player death
             Health.OnHealthZero += Die;
+
+            // Name player objects in the hierarchy for ease of debugging
+            if (isLocalPlayer)
+            {
+                name = $"Player [id = {PlayerId}]";
+            }
+            else
+            {
+                var id = PlayerId == 0 ? 1 : 0;
+                name = $"Player [id = {id}]";
+            }
         }
 
         private void OnEnable()
@@ -85,9 +96,22 @@ namespace DokiDokiFightClub
         [Client]
         public void HeavyAttack(InputAction.CallbackContext context)
         {
+            if (!isLocalPlayer || !ActiveWeapon.CanAttack)
+                return;
             // Play attack animation
             // Check if weapon collides with an enemy
-            Debug.Log("HEAVY attack!");
+            // Check if weapon collides with an enemy
+            Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
+
+            if (Physics.Raycast(ray, out RaycastHit hit) && hit.transform.TryGetComponent(out Player enemy))
+            {
+                Debug.Log($"Heavy ATK!");
+                CmdOnPerformAttack(enemy, ActiveWeapon.HeavyAttack());
+            }
+            else
+            {
+                Debug.Log("whiff");
+            }
         }
 
         #endregion

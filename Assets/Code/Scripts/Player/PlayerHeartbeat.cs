@@ -23,34 +23,39 @@ namespace DokiDokiFightClub
         [SyncVar]
         private int _restingHeartRate;
 
-        private FitbitApi _fitbitApi;
         private HeartRateScaler _heartRateScaler;
 
         public void Start()
         {
-            _fitbitApi = FindObjectOfType<FitbitApi>();
+            // Subscribe to FitbitApi's data retrieval event
+            FitbitApi.Instance.OnDataRetrieved += OnHeartRateRetrieved;
+
+            // Initialize Heartbeat SFX settings
             _heartRateScaler = new HeartRateScaler(_restingHeartRate, _defaultVolumePct);
             _heartbeatSource.volume = _defaultVolumePct;
             _heartbeatSource.pitch = _defaultMinPitchPct;
 
             if (isLocalPlayer)
+            {
                 CmdOnSetRestingHr();
-
-            // Heart rate SFX should only play from the remote player's object
-            if (!isLocalPlayer)
-                Initialize();
+            }
+            else
+            {
+                // Heart rate SFX should only play from the remote player's object
+                InitializeSfx();
+            }
         }
 
-        //public void Update()
-        //{
-        //    // TESTING! REMOVE LATER! ----------------------------------------------------
-        //    if (Input.GetKeyDown(KeyCode.Space))
-        //    {
-        //        UpdateHeartRate();
-        //    }
-        //}
+        public void Update()
+        {
+            // TESTING! REMOVE LATER! ----------------------------------------------------
+            if (Input.GetKeyDown(KeyCode.X) && isLocalPlayer)
+            {
+                UpdateHeartRate();
+            }
+        }
 
-        private void Initialize()
+        private void InitializeSfx()
         {
             StartCoroutine(PlayHeartbeatSfx());
         }
@@ -58,8 +63,18 @@ namespace DokiDokiFightClub
         /// <summary>Retrieve updated heart rate data to convert into audio effects.</summary>
         public void UpdateHeartRate()
         {
-            // TODO: call this method after the round ends.
-            CmdOnUpdateHeartRate();
+            if (!isLocalPlayer)
+                return;
+
+            FitbitApi.Instance.GetCurrentHeartRate();
+        }
+
+        private void OnHeartRateRetrieved(int updatedHr)
+        {
+            if (!isLocalPlayer)
+                return;
+            Debug.Log($"<color=green>Updated HR = {updatedHr}bpm</color>");
+            CmdOnUpdateHeartRate(updatedHr);
         }
 
         /// <summary>Update the heartbeat SFX of the enemy game object for the local client.</summary>
@@ -68,7 +83,6 @@ namespace DokiDokiFightClub
         {
             if (isLocalPlayer)
                 return;
-
             var mappedAudioLevel = _heartRateScaler.MapToAudioLevel(newHeartRate);
             var mappedPlaybackSpeed = _heartRateScaler.MapToPlaybackSpeed(newHeartRate);
             _heartbeatSource.volume = mappedAudioLevel;
@@ -96,14 +110,14 @@ namespace DokiDokiFightClub
         [Command]
         private void CmdOnSetRestingHr()
         {
-            _restingHeartRate = _fitbitApi.GetRestingHeartRate();
+            _restingHeartRate = FitbitApi.Instance.GetRestingHeartRate();
         }
 
         [Command]
-        private void CmdOnUpdateHeartRate()
+        private void CmdOnUpdateHeartRate(int updatedHr)
         {
             Debug.Log($"<color=green>Resting HR = {_restingHeartRate}bpm</color>");
-            _currentHr = _fitbitApi.GetCurrentHeartRate();
+            _currentHr = updatedHr;
         }
         #endregion
     }
