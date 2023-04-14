@@ -29,8 +29,8 @@ namespace DokiDokiFightClub
         public static readonly string FITBIT_TOKEN_TYPE_KEY = "FitbitTokenType";
         public static readonly string FITBIT_EXPIRES_IN_KEY = "FitbitExpiresIn";
 
-        private const string _clientSecret = "12b706e315d43b5f43098c1a43ed846f";
-        private const string _clientId = "238Z37";
+        private const string _clientSecret = "";
+        private const string _clientId = "";
 
         // URLs
         private const string _tokenUrl = "https://api.fitbit.com/oauth2/token";
@@ -43,9 +43,9 @@ namespace DokiDokiFightClub
         private const string _codeChallMethod = "S256";
         private const string _scopeParams = "heartrate+sleep";
         // Proof of Key for Code Exchance (PKCE) Code Verifier:
-        private const string _codeVerifier = "6g1u3v4j6v7343031y194p12000u194h7067094a4n1j6s430q124s28572r234p0u6w702r140l276j4k4e330q1t1024196221496u3k1q531968326c6l4g0n4a4u";
-        private const string _codeChallenge = "pRCLUfrJ6nwUxeRI3MVia8_AL5rYQFbxBn6qsJnYfUA"; // Base64-encoded SHA-256 transformation of Code Verifier
-        private const string _state = "586y3d1c4y0m2x6x4j28571u253m3p0p";
+        private const string _codeVerifier = "";
+        private const string _codeChallenge = ""; // Base64-encoded SHA-256 transformation of Code Verifier
+        private const string _state = "";
 
         // Response Codes
         private string _returnCode; // The code returned from API after successful call
