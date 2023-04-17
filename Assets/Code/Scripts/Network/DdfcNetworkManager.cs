@@ -178,7 +178,10 @@ namespace DokiDokiFightClub
 
             for (int index = 1; index <= MatchInstances; index++)
             {
-                yield return SceneManager.LoadSceneAsync(GameScene, new LoadSceneParameters { loadSceneMode = LoadSceneMode.Additive, localPhysicsMode = LocalPhysicsMode.Physics3D });
+                yield return SceneManager.LoadSceneAsync(GameScene, new LoadSceneParameters { 
+                    loadSceneMode = LoadSceneMode.Additive, 
+                    localPhysicsMode = LocalPhysicsMode.Physics3D 
+                });
 
                 Scene newScene = SceneManager.GetSceneAt(index);
                 _subscenes.Add(newScene);

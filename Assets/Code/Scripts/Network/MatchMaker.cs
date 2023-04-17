@@ -76,7 +76,6 @@ namespace DokiDokiFightClub
         void InitiateMatch()
         {
             List<PlayerQueueIdentity> matchPlayers = new();
-            Debug.Log("MatchMaker.InitateMatch()");
             // Generate random spawn index for first player
             var spawnIndex = GenerateSpawnIndex();
 

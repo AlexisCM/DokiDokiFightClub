@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using Mirror;
 using Newtonsoft.Json;
 using TMPro;
 using UnityEngine;
@@ -30,8 +29,14 @@ namespace DokiDokiFightClub
         public static readonly string FITBIT_TOKEN_TYPE_KEY = "FitbitTokenType";
         public static readonly string FITBIT_EXPIRES_IN_KEY = "FitbitExpiresIn";
 
+        #region Secrets
         private const string _clientSecret = "";
         private const string _clientId = "";
+        // Proof of Key for Code Exchance (PKCE) Code Verifier:
+        private const string _codeVerifier = "";
+        private const string _codeChallenge = ""; // Base64-encoded SHA-256 transformation of Code Verifier
+        private const string _state = "";
+        #endregion
 
         // URLs
         private const string _tokenUrl = "https://api.fitbit.com/oauth2/token";
@@ -43,10 +48,6 @@ namespace DokiDokiFightClub
         // URI arguments
         private const string _codeChallMethod = "S256";
         private const string _scopeParams = "heartrate+sleep";
-        // Proof of Key for Code Exchance (PKCE) Code Verifier:
-        private const string _codeVerifier = "";
-        private const string _codeChallenge = ""; // Base64-encoded SHA-256 transformation of Code Verifier
-        private const string _state = "";
 
         // Response Codes
         private string _returnCode; // The code returned from API after successful call
@@ -69,6 +70,10 @@ namespace DokiDokiFightClub
                 Instance = this;
                 DontDestroyOnLoad(this);
             }
+
+            /// Uncomment to test Fitbit Authorization.
+            //PlayerPrefs.DeleteKey(FITBIT_ACCESS_TOKEN_KEY);
+            //PlayerPrefs.DeleteKey(FITBIT_REFRESH_TOKEN_KEY);
         }
 
         public void LoginToFitbit()
@@ -217,7 +222,6 @@ namespace DokiDokiFightClub
 
         private void GetHeartRateData()
         {
-            Debug.Log("FitbitApi.cs :: GetHeartRateData()");
             var authToken = "Bearer " + PlayerPrefs.GetString(FITBIT_ACCESS_TOKEN_KEY);
             var request = UnityWebRequest.Get(GetHeartRateIntradayUrl());
             request.SetRequestHeader("authorization", authToken);
@@ -241,8 +245,6 @@ namespace DokiDokiFightClub
         /// <param name="hrData"></param>
         private void FetchedDataHandler(FitbitHeartRateData hrData)
         {
-            Debug.Log(hrData.ToString());
-            
             // Returns a list of all heart rates
             var heartIntradays = hrData.ActivitiesHeartIntradays.dataset;
             var restingHr = float.Parse(hrData.ActivitiesHearts[0].value);
@@ -261,8 +263,7 @@ namespace DokiDokiFightClub
             _playerHeartData.CurrentHeartRate = avgHeartRate;
             _playerHeartData.RestingHeartRate = restingHr == 0 ? DefaultHeartRate : restingHr;
 
-            if (OnDataRetrieved != null)
-                OnDataRetrieved.Invoke(_playerHeartData.CurrentHeartRate);
+            OnDataRetrieved?.Invoke(_playerHeartData.CurrentHeartRate);
         }
 
         /// <summary>
@@ -276,11 +277,8 @@ namespace DokiDokiFightClub
             return Convert.ToBase64String(plainTextBytesToken);
         }
 
-        /// <summary>
-        /// Return the 
-        /// </summary>
+        /// <summary> Return the complete, formatted URL for making API calls for Intraday data. </summary>
         /// <param name="timespan">Time interval</param>
-        /// <returns>Complete, formatted URL</returns>
         private string GetHeartRateIntradayUrl()
         {
             var now = DateTime.Now.AddMinutes(-1.0);

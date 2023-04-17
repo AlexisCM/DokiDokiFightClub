@@ -3,11 +3,12 @@ using UnityEngine;
 
 namespace DokiDokiFightClub
 {
-    /// <summary>
-    /// Class handles user input on UI elements.
-    /// </summary>
+    /// <summary> Class handles user input on UI elements. </summary>
     public class UIManager : MonoBehaviour
     {
+        [SerializeField]
+        private GameObject FitbitNotLinkedUi;
+
         private DdfcNetworkManager _networkManager;
 
         private void Start()
@@ -16,19 +17,27 @@ namespace DokiDokiFightClub
         }
 
         #region Offline Scene UI
-        /// <summary>
-        /// Start Network Client.
-        /// </summary>
+        /// <summary> Start Network Client. </summary>
         public void OnPlayButton()
         {
             if (!PlayerPrefs.HasKey(FitbitApi.FITBIT_REFRESH_TOKEN_KEY) || 
                 !PlayerPrefs.HasKey(FitbitApi.FITBIT_ACCESS_TOKEN_KEY))
             {
-                // TODO: display error message to user; they must login to fitbit first
-                //return;
+                FitbitNotLinkedUi.SetActive(true);
+                return;
             }
 
             _networkManager.StartClient();
+        }
+
+        public void OnQuitButton()
+        {
+            Application.Quit();
+        }
+
+        public void OnLinkFitbitUiOkayButton()
+        {
+            FitbitNotLinkedUi.SetActive(false);
         }
         #endregion
 

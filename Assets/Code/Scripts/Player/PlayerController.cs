@@ -17,8 +17,8 @@ namespace DokiDokiFightClub
         InputMaster PlayerInputActions;
 
         [Header("Movement Settings")]
-        [SerializeField] private float _walkSpeed = 4f;     // Player's walk speed
-        [SerializeField] private float _sprintSpeed = 8f;   // Player's sprint speed
+        [SerializeField] private float _walkSpeed = 2f;     // Player's walk speed
+        [SerializeField] private float _sprintSpeed = 4f;   // Player's sprint speed
         [SerializeField] private float _jumpHeight = 1f;    // How high the player can jump
         [SerializeField] private float _gravity = -9.81f;   // Force of gravity applied to movement
 

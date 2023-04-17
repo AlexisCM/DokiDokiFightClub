@@ -10,8 +10,8 @@ namespace DokiDokiFightClub
         public HealthMetre Health;      // Handles player's Max and Current Health
         public Weapon ActiveWeapon;     // Player's active weapon
         public PlayerStats Stats;       // Player's stats for the current match (kills/deaths/damage/etc)
-        public PlayerHeartbeat Heartbeat;
-        public PlayerUiManager PlayerUi;
+        public PlayerHeartbeat Heartbeat; // Handles heartbeat effect variables
+        public PlayerUiManager PlayerUi;  // References to player UI objects that must be toggled/updated
 
         #region SyncVars
         [SyncVar]
@@ -19,9 +19,6 @@ namespace DokiDokiFightClub
 
         [SyncVar]
         public int PlayerId;
-
-        [SyncVar]
-        public uint Score;
         #endregion
 
         private InputMaster _playerInputActions;    // Reference to Player inputs for attacking
@@ -49,6 +46,7 @@ namespace DokiDokiFightClub
             if (isLocalPlayer)
             {
                 name = $"Player [id = {PlayerId}]";
+                PlayerUi.ToggleScoreUi(true);
             }
             else
             {
@@ -84,12 +82,7 @@ namespace DokiDokiFightClub
 
             if (Physics.Raycast(ray, out RaycastHit hit) && hit.transform.TryGetComponent(out Player enemy))
             {
-                Debug.Log($"Quick ATK!");
                 CmdOnPerformAttack(enemy, ActiveWeapon.QuickAttack());
-            }
-            else
-            {
-                Debug.Log("whiff");
             }
         }
 
@@ -105,16 +98,27 @@ namespace DokiDokiFightClub
 
             if (Physics.Raycast(ray, out RaycastHit hit) && hit.transform.TryGetComponent(out Player enemy))
             {
-                Debug.Log($"Heavy ATK!");
                 CmdOnPerformAttack(enemy, ActiveWeapon.HeavyAttack());
             }
-            else
-            {
-                Debug.Log("whiff");
-            }
+        }
+        #endregion
+
+        [Client]
+        public void DisplayRoundOverUi(bool? isWinner)
+        {
+            // Prevent player input from interfering
+            ToggleComponents(false);
+
+            if (isLocalPlayer)
+                PlayerUi.ToggleRoundOver(true, isWinner);
         }
 
-        #endregion
+        [Client]
+        public void UpdateScoreUi(uint localScore, uint remoteScore)
+        {
+            if (isLocalPlayer)
+                PlayerUi.UpdateScoreUiValues(localScore, remoteScore);
+        }
 
         /// <summary>Reset the player's health and set transform to new spawn point.</summary>
         /// <param name="spawnPoint"></param>
@@ -131,11 +135,17 @@ namespace DokiDokiFightClub
             Heartbeat.UpdateHeartRate();
 
             // Turn off round-over UI for local player
-            //if (isLocalPlayer)
-            //    PlayerUi.ToggleRoundOver(false);
+            if (isLocalPlayer)
+                PlayerUi.ToggleRoundOver(false);
 
             // Re-enable player input/controls
             ToggleComponents(true);
+        }
+
+        /// <summary> Stops client and returns player to the OfflineScene. </summary>
+        public void LeaveMatch()
+        {
+            _networkManager.StopClient();
         }
 
         private void Die()
@@ -144,8 +154,6 @@ namespace DokiDokiFightClub
             ToggleComponents(false);
 
             // TODO: trigger death animation
-            // TODO: display round winner/loser (might be handled as rpc on MatchManager
-            // TODO: update player stats
             _networkManager.MatchManagers[MatchId].PlayerDeath(PlayerId);
         }
 
@@ -153,7 +161,7 @@ namespace DokiDokiFightClub
         {
             if (isLocalPlayer)
             {
-                // UI for displaying score
+                // UI for displaying id
                 GUI.Box(new Rect(10f, 10f, 100f, 25f), $"P{PlayerId}");
             }
         }
@@ -168,12 +176,6 @@ namespace DokiDokiFightClub
         }
 
         #region Commands
-        [TargetRpc]
-        public void TargetDisplayRoundOver(NetworkConnectionToClient conn, bool isWinner)
-        {
-            if (isLocalPlayer)
-                PlayerUi.ToggleRoundOver(true, isWinner);
-        }
 
         [Command]
         private void CmdOnPerformAttack(Player target, int damageDealt)

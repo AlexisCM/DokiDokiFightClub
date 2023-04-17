@@ -46,15 +46,6 @@ namespace DokiDokiFightClub
             }
         }
 
-        public void Update()
-        {
-            // TESTING! REMOVE LATER! ----------------------------------------------------
-            if (Input.GetKeyDown(KeyCode.X) && isLocalPlayer)
-            {
-                UpdateHeartRate();
-            }
-        }
-
         private void InitializeSfx()
         {
             StartCoroutine(PlayHeartbeatSfx());
@@ -69,6 +60,8 @@ namespace DokiDokiFightClub
             FitbitApi.Instance.GetCurrentHeartRate();
         }
 
+        /// <summary> Invoked by Fitbit API once data is retrieved. </summary>
+        /// <param name="updatedHr"></param>
         private void OnHeartRateRetrieved(int updatedHr)
         {
             if (!isLocalPlayer)

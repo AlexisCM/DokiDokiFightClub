@@ -1,12 +1,16 @@
+using Mirror;
 using System.Collections;
 using UnityEngine;
 
 namespace DokiDokiFightClub
 {
-    public class Round : MonoBehaviour
+    public class Round : NetworkBehaviour
     {
-        public float CurrentTime { get; private set; }   // Current time left in the round
-        public bool IsOngoing { get; private set; }     // Flag for if the round is still in progress
+        [SyncVar]
+        public float CurrentTime; // Current time left in the round
+
+        [SyncVar]
+        public bool IsOngoing; // Flag for if the round is still in progress
 
         private const float _maxRoundDuration = 60f;     // Maximum duration per round in seconds
 
@@ -31,7 +35,7 @@ namespace DokiDokiFightClub
 
         IEnumerator StartTimer()
         {
-            while (CurrentTime > 0)
+            while (CurrentTime > 0f)
             {
                 yield return new WaitForSeconds(1f);
                 --CurrentTime;
