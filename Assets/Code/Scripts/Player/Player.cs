@@ -10,8 +10,8 @@ namespace DokiDokiFightClub
         public HealthMetre Health;      // Handles player's Max and Current Health
         public Weapon ActiveWeapon;     // Player's active weapon
         public PlayerStats Stats;       // Player's stats for the current match (kills/deaths/damage/etc)
-        public PlayerHeartbeat Heartbeat;
-        public PlayerUiManager PlayerUi;
+        public PlayerHeartbeat Heartbeat; // Handles heartbeat effect variables
+        public PlayerUiManager PlayerUi;  // References to player UI objects that must be toggled/updated
 
         #region SyncVars
         [SyncVar]

@@ -7,6 +7,7 @@ using UnityEngine;
 namespace DokiDokiFightClub
 {
     [RequireComponent(typeof(Round))]
+    [RequireComponent(typeof(ScoreKeeper))]
     public class MatchManager : NetworkBehaviour
     {
         public int MatchInstanceId { get; private set; }
@@ -83,8 +84,8 @@ namespace DokiDokiFightClub
 
         public void PlayerDeath(int deadPlayerId)
         {
-            // TODO: Keep track of players' round wins/losses
             RpcLogMessage($"<color=red>Player#{deadPlayerId} was KILLED!</color>");
+            // Update player scores
             ScoreKeeper.AddScore(GetRemotePlayerId(deadPlayerId));
             StartCoroutine(RoundEnded(deadPlayerId));
         }
@@ -171,11 +172,6 @@ namespace DokiDokiFightClub
             return localPlayerId == 0 ? 1 : 0;
         }
 
-        private int GetPlayerScore(int key)
-        {
-            return _playerScoreKeeper.TryGetValue(key, out int score) ? score : 0;
-        }
-
         #region Remote Prodecure Calls
         [ClientRpc]
         private void RpcLogMessage(string msg)
@@ -215,19 +211,5 @@ namespace DokiDokiFightClub
             conn.identity.GetComponent<Player>().LeaveMatch();
         }
         #endregion
-
-        [Command]
-        private void CmdUpdateScoreKeeper(int winningPlayerId)
-        {
-            // Update score of winning player
-            if (_playerScoreKeeper.TryGetValue(winningPlayerId, out int currentScore))
-            {
-                _playerScoreKeeper[winningPlayerId] = currentScore + 1;
-            }
-            else
-            {
-                _playerScoreKeeper.Add(winningPlayerId, 1);
-            }
-        }
     }
 }
