@@ -27,8 +27,7 @@ namespace DokiDokiFightClub
             Transform mainCamera = Camera.main.gameObject.transform; // Get the scene's main camera
                                                                      // Assign the main camera to the player's camera object
             mainCamera.parent = PlayerCamera.transform;
-            mainCamera.position = PlayerCamera.transform.position;
-            mainCamera.rotation = PlayerCamera.transform.rotation;
+            mainCamera.SetPositionAndRotation(PlayerCamera.transform.position, PlayerCamera.transform.rotation);
         }
 
         void Update()
@@ -45,6 +44,14 @@ namespace DokiDokiFightClub
 
             PlayerCamera.transform.rotation = Quaternion.Euler(_xRotation, _yRotation, 0);  // Rotate camera
             transform.rotation = Quaternion.Euler(0, _yRotation, 0); // Rotate player's body
+        }
+
+        public override void OnStopClient()
+        {
+            base.OnStopClient();
+            // Unlock cursor before player returns to Offline scene
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
         }
     }
 }

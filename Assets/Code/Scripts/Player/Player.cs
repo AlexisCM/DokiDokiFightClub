@@ -84,12 +84,7 @@ namespace DokiDokiFightClub
 
             if (Physics.Raycast(ray, out RaycastHit hit) && hit.transform.TryGetComponent(out Player enemy))
             {
-                Debug.Log($"Quick ATK!");
                 CmdOnPerformAttack(enemy, ActiveWeapon.QuickAttack());
-            }
-            else
-            {
-                Debug.Log("whiff");
             }
         }
 
@@ -105,24 +100,25 @@ namespace DokiDokiFightClub
 
             if (Physics.Raycast(ray, out RaycastHit hit) && hit.transform.TryGetComponent(out Player enemy))
             {
-                Debug.Log($"Heavy ATK!");
                 CmdOnPerformAttack(enemy, ActiveWeapon.HeavyAttack());
-            }
-            else
-            {
-                Debug.Log("whiff");
             }
         }
         #endregion
 
         [Client]
-        public void DisplayRoundOverUi(bool isWinner)
+        public void DisplayRoundOverUi(bool? isWinner)
         {
             // Prevent player input from interfering
             ToggleComponents(false);
 
             if (isLocalPlayer)
                 PlayerUi.ToggleRoundOver(true, isWinner);
+        }
+
+        public void UpdateScoreUi(int localScore, int remoteScore)
+        {
+            if (isLocalPlayer)
+                PlayerUi.UpdateScoreUiValues(localScore, remoteScore);
         }
 
         /// <summary>Reset the player's health and set transform to new spawn point.</summary>
@@ -147,13 +143,18 @@ namespace DokiDokiFightClub
             ToggleComponents(true);
         }
 
+        /// <summary> Stops client and returns player to the OfflineScene. </summary>
+        public void LeaveMatch()
+        {
+            _networkManager.StopClient();
+        }
+
         private void Die()
         {
             // Disable player input and movement
             ToggleComponents(false);
 
             // TODO: trigger death animation
-            // TODO: display round winner/loser (might be handled as rpc on MatchManager
             // TODO: update player stats
             _networkManager.MatchManagers[MatchId].PlayerDeath(PlayerId);
         }

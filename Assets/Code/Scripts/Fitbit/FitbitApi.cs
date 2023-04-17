@@ -68,6 +68,10 @@ namespace DokiDokiFightClub
                 Instance = this;
                 DontDestroyOnLoad(this);
             }
+
+            /// Uncomment to test Fitbit Authorization.
+            //PlayerPrefs.DeleteKey(FITBIT_ACCESS_TOKEN_KEY);
+            //PlayerPrefs.DeleteKey(FITBIT_REFRESH_TOKEN_KEY);
         }
 
         public void LoginToFitbit()
@@ -216,7 +220,6 @@ namespace DokiDokiFightClub
 
         private void GetHeartRateData()
         {
-            Debug.Log("FitbitApi.cs :: GetHeartRateData()");
             var authToken = "Bearer " + PlayerPrefs.GetString(FITBIT_ACCESS_TOKEN_KEY);
             var request = UnityWebRequest.Get(GetHeartRateIntradayUrl());
             request.SetRequestHeader("authorization", authToken);
@@ -240,8 +243,6 @@ namespace DokiDokiFightClub
         /// <param name="hrData"></param>
         private void FetchedDataHandler(FitbitHeartRateData hrData)
         {
-            Debug.Log(hrData.ToString());
-            
             // Returns a list of all heart rates
             var heartIntradays = hrData.ActivitiesHeartIntradays.dataset;
             var restingHr = float.Parse(hrData.ActivitiesHearts[0].value);
@@ -260,8 +261,7 @@ namespace DokiDokiFightClub
             _playerHeartData.CurrentHeartRate = avgHeartRate;
             _playerHeartData.RestingHeartRate = restingHr == 0 ? DefaultHeartRate : restingHr;
 
-            if (OnDataRetrieved != null)
-                OnDataRetrieved.Invoke(_playerHeartData.CurrentHeartRate);
+            OnDataRetrieved?.Invoke(_playerHeartData.CurrentHeartRate);
         }
 
         /// <summary>
@@ -275,11 +275,8 @@ namespace DokiDokiFightClub
             return Convert.ToBase64String(plainTextBytesToken);
         }
 
-        /// <summary>
-        /// Return the 
-        /// </summary>
+        /// <summary> Return the complete, formatted URL for making API calls for Intraday data. </summary>
         /// <param name="timespan">Time interval</param>
-        /// <returns>Complete, formatted URL</returns>
         private string GetHeartRateIntradayUrl()
         {
             var now = DateTime.Now.AddMinutes(-1.0);

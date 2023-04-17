@@ -29,7 +29,8 @@ namespace DokiDokiFightClub
         [SyncVar]
         private bool _isDoingWork = false;  // Flag for methods called in the update loop
 
-        private readonly SyncList<int> _roundWinner = new();
+        /// <summary> Key, Value is equal to PlayerId, Score </summary>
+        private readonly SyncDictionary<int, int> _playerScoreKeeper = new();
 
         public void SetMatchInstanceId(int matchInstanceId)
         {
@@ -74,7 +75,7 @@ namespace DokiDokiFightClub
             else if (!Round.IsOngoing && _roundsPlayed == _maxRounds)
             {
                 // Maximum rounds were played; end the game
-                MatchEnded();
+                StartCoroutine(nameof(MatchEnded));
             }
         }
 
@@ -96,12 +97,25 @@ namespace DokiDokiFightClub
             {
                 if (deadPlayerId != null && deadPlayerId != player.PlayerId)
                 {
-                    _roundWinner.Add(player.PlayerId);
+                    // Update score of winning player
+                    if (_playerScoreKeeper.TryGetValue(player.PlayerId, out int currentScore))
+                    {
+                        _playerScoreKeeper[player.PlayerId] = currentScore + 1;
+                    }
+                    else
+                    {
+                        _playerScoreKeeper.Add(player.PlayerId, 1);
+                    }
+
                     TargetDisplayRoundOver(player.connectionToClient, true);
+                }
+                else if (deadPlayerId != null && deadPlayerId == player.PlayerId)
+                {
+                    TargetDisplayRoundOver(player.connectionToClient, false);
                 }
                 else
                 {
-                    TargetDisplayRoundOver(player.connectionToClient, false);
+                    TargetDisplayRoundOver(player.connectionToClient, null);
                 }
             }
 
@@ -118,14 +132,22 @@ namespace DokiDokiFightClub
             _isDoingWork = false;
         }
 
-        private void MatchEnded()
+        private IEnumerator MatchEnded()
         {
-            Debug.Log("GAME OVER!");
             // TODO: Determine the match winner
             StopAllCoroutines();
-            // Transition player to match summary scene
+            // TODO: Transition player to match summary scene
             WaitingForPlayers = true;
             // Disconnect player clients, which will automatically send them back to the offline screen
+            MatchMaker.Instance.RemoveMatch(MatchInstanceId);
+            foreach (var player in Players)
+            {
+                TargetOnMatchEnded(player.connectionToClient);
+            }
+
+            yield return new WaitForEndOfFrame();
+
+            Players.Clear();
         }
 
         /// <summary> If the number of rounds played is odd, the player must swap spawn positions. </summary>
@@ -141,6 +163,16 @@ namespace DokiDokiFightClub
                 index = (playerId == 0) ? 1 : 0;
             }
             return index;
+        }
+
+        private int GetRemotePlayerId(int localPlayerId)
+        {
+            return localPlayerId == 0 ? 1 : 0;
+        }
+
+        private int GetPlayerScore(int key)
+        {
+            return _playerScoreKeeper.TryGetValue(key, out int score) ? score : 0;
         }
 
         #region Remote Prodecure Calls
@@ -162,14 +194,25 @@ namespace DokiDokiFightClub
             Debug.Log($"Round ended! {_roundsPlayed} rounds played.");
             var player = conn.identity.GetComponent<Player>();
             var spawnIndex = GetPlayerSpawnIndex(player.PlayerId);
+
+            var localScore = GetPlayerScore(player.PlayerId);
+            var remoteScore = GetPlayerScore(GetRemotePlayerId(player.PlayerId));
+
+            player.UpdateScoreUi(localScore, remoteScore);
             player.ResetState(NetworkManager.startPositions[spawnIndex]);
         }
 
         [TargetRpc]
-        private void TargetDisplayRoundOver(NetworkConnection conn, bool isWinner)
+        private void TargetDisplayRoundOver(NetworkConnection conn, bool? isWinner)
         {
             var player = conn.identity.GetComponent<Player>();
             player.DisplayRoundOverUi(isWinner);
+        }
+
+        [TargetRpc]
+        private void TargetOnMatchEnded(NetworkConnection conn)
+        {
+            conn.identity.GetComponent<Player>().LeaveMatch();
         }
         #endregion
     }

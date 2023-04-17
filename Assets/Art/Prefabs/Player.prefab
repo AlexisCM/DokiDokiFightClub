@@ -417,6 +417,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _healthMetreObject: {fileID: 8926627266848111423}
+  _scoreUiObject: {fileID: 5440559490457087327}
+  _localPlayerScoreObject: {fileID: 6049878082724275343}
+  _remotePlayerScoreObject: {fileID: 1360523287173193086}
   _roundOverObject: {fileID: 3523024051215894900}
   _roundOverBackground: {fileID: 1853448437102401880}
   _roundOverText: {fileID: 3718985771221630252}
@@ -544,7 +547,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5496266869503130879}
   m_Layer: 0
-  m_Name: RoundSystem
+  m_Name: ScoreUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
