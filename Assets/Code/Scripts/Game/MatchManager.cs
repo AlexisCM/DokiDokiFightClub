@@ -150,7 +150,6 @@ namespace DokiDokiFightClub
             // TODO: Transition player to match summary scene
             WaitingForPlayers = true;
             // Disconnect player clients, which will automatically send them back to the offline screen
-            MatchMaker.Instance.RemoveMatch(MatchInstanceId);
             foreach (var player in Players)
             {
                 TargetOnMatchEnded(player.connectionToClient);

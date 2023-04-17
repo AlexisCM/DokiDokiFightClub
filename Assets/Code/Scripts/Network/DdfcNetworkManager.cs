@@ -159,6 +159,11 @@ namespace DokiDokiFightClub
             if (conn.identity.TryGetComponent(out Player player))
             {
                 MatchManagers[player.MatchId].RemovePlayerFromMatch(player);
+
+                if (MatchManagers[player.MatchId].WaitingForPlayers)
+                {
+                    MatchMaker.Instance.RemoveMatch(player.MatchId);
+                }
             }
             
             base.OnServerDisconnect(conn);
