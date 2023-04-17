@@ -19,9 +19,6 @@ namespace DokiDokiFightClub
 
         [SyncVar]
         public int PlayerId;
-
-        [SyncVar]
-        public uint Score;
         #endregion
 
         private InputMaster _playerInputActions;    // Reference to Player inputs for attacking
@@ -49,6 +46,7 @@ namespace DokiDokiFightClub
             if (isLocalPlayer)
             {
                 name = $"Player [id = {PlayerId}]";
+                PlayerUi.ToggleScoreUi(true);
             }
             else
             {
@@ -115,7 +113,8 @@ namespace DokiDokiFightClub
                 PlayerUi.ToggleRoundOver(true, isWinner);
         }
 
-        public void UpdateScoreUi(int localScore, int remoteScore)
+        [Client]
+        public void UpdateScoreUi(uint localScore, uint remoteScore)
         {
             if (isLocalPlayer)
                 PlayerUi.UpdateScoreUiValues(localScore, remoteScore);
@@ -155,7 +154,6 @@ namespace DokiDokiFightClub
             ToggleComponents(false);
 
             // TODO: trigger death animation
-            // TODO: update player stats
             _networkManager.MatchManagers[MatchId].PlayerDeath(PlayerId);
         }
 
@@ -163,7 +161,7 @@ namespace DokiDokiFightClub
         {
             if (isLocalPlayer)
             {
-                // UI for displaying score
+                // UI for displaying id
                 GUI.Box(new Rect(10f, 10f, 100f, 25f), $"P{PlayerId}");
             }
         }

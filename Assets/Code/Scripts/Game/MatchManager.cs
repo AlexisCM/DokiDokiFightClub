@@ -15,6 +15,7 @@ namespace DokiDokiFightClub
         public List<Player> Players;
 
         internal Round Round { get; private set; } // Keeps track of current round's state
+        internal ScoreKeeper ScoreKeeper { get; private set; }
 
         private DdfcNetworkManager _networkManager;
         private const int _maxRounds = 3;   // Maximum number of rounds played per match
@@ -41,6 +42,7 @@ namespace DokiDokiFightClub
         {
             _networkManager = NetworkManager.singleton as DdfcNetworkManager;
             Round = GetComponent<Round>();
+            ScoreKeeper = GetComponent<ScoreKeeper>();
         }
 
         public void StartMatch(List<Player> players)
@@ -83,6 +85,7 @@ namespace DokiDokiFightClub
         {
             // TODO: Keep track of players' round wins/losses
             RpcLogMessage($"<color=red>Player#{deadPlayerId} was KILLED!</color>");
+            ScoreKeeper.AddScore(GetRemotePlayerId(deadPlayerId));
             StartCoroutine(RoundEnded(deadPlayerId));
         }
 
@@ -92,29 +95,27 @@ namespace DokiDokiFightClub
             Round.IsOngoing = false;
             ++_roundsPlayed;
 
-            // Display Round Victory/Defeat UI
+            foreach (var score in _playerScoreKeeper)
+            {
+                Debug.Log($"Player: {score.Key}, Score: {score.Value}");
+            }
+
+            // Display Round Over UI
             foreach (var player in Players)
             {
                 if (deadPlayerId != null && deadPlayerId != player.PlayerId)
                 {
-                    // Update score of winning player
-                    if (_playerScoreKeeper.TryGetValue(player.PlayerId, out int currentScore))
-                    {
-                        _playerScoreKeeper[player.PlayerId] = currentScore + 1;
-                    }
-                    else
-                    {
-                        _playerScoreKeeper.Add(player.PlayerId, 1);
-                    }
-
+                    // Victorious player
                     TargetDisplayRoundOver(player.connectionToClient, true);
                 }
                 else if (deadPlayerId != null && deadPlayerId == player.PlayerId)
                 {
+                    // Defeated player
                     TargetDisplayRoundOver(player.connectionToClient, false);
                 }
                 else
                 {
+                    // Draw
                     TargetDisplayRoundOver(player.connectionToClient, null);
                 }
             }
@@ -194,11 +195,6 @@ namespace DokiDokiFightClub
             Debug.Log($"Round ended! {_roundsPlayed} rounds played.");
             var player = conn.identity.GetComponent<Player>();
             var spawnIndex = GetPlayerSpawnIndex(player.PlayerId);
-
-            var localScore = GetPlayerScore(player.PlayerId);
-            var remoteScore = GetPlayerScore(GetRemotePlayerId(player.PlayerId));
-
-            player.UpdateScoreUi(localScore, remoteScore);
             player.ResetState(NetworkManager.startPositions[spawnIndex]);
         }
 
@@ -206,6 +202,10 @@ namespace DokiDokiFightClub
         private void TargetDisplayRoundOver(NetworkConnection conn, bool? isWinner)
         {
             var player = conn.identity.GetComponent<Player>();
+            var localScore = ScoreKeeper.GetScore(player.PlayerId);
+            var remoteScore = ScoreKeeper.GetScore(GetRemotePlayerId(player.PlayerId));
+
+            player.UpdateScoreUi(localScore, remoteScore);
             player.DisplayRoundOverUi(isWinner);
         }
 
@@ -215,5 +215,19 @@ namespace DokiDokiFightClub
             conn.identity.GetComponent<Player>().LeaveMatch();
         }
         #endregion
+
+        [Command]
+        private void CmdUpdateScoreKeeper(int winningPlayerId)
+        {
+            // Update score of winning player
+            if (_playerScoreKeeper.TryGetValue(winningPlayerId, out int currentScore))
+            {
+                _playerScoreKeeper[winningPlayerId] = currentScore + 1;
+            }
+            else
+            {
+                _playerScoreKeeper.Add(winningPlayerId, 1);
+            }
+        }
     }
 }

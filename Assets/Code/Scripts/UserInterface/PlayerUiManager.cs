@@ -49,10 +49,10 @@ public class PlayerUiManager : MonoBehaviour
         _scoreUiObject.SetActive(isActive);
     }
 
-    public void UpdateScoreUiValues(int localScore, int remoteScore)
+    public void UpdateScoreUiValues(uint localScore, uint remoteScore)
     {
         _localPlayerScoreObject.text = localScore.ToString();
-        _localPlayerScoreObject.text = remoteScore.ToString();
+        _remotePlayerScoreObject.text = remoteScore.ToString();
     }
 
     public void ToggleRoundOver(bool isActive)

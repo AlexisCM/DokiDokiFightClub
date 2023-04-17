@@ -113,6 +113,7 @@ GameObject:
   - component: {fileID: 2037235333094164298}
   - component: {fileID: 2037235333094164299}
   - component: {fileID: 2037235333094163636}
+  - component: {fileID: 7982879904192305240}
   m_Layer: 0
   m_Name: MatchManager
   m_TagString: Untagged
@@ -188,6 +189,21 @@ MonoBehaviour:
   WaitingForPlayers: 1
   Players: []
   _timerTextObj: {fileID: 6965595329551777826}
+--- !u!114 &7982879904192305240
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2037235333094163637}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aeb1b58e1bcc62b46a4415773e1bf457, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0.1
 --- !u!1 &2732205858085760376
 GameObject:
   m_ObjectHideFlags: 0
