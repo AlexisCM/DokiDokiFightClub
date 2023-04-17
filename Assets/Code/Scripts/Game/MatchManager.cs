@@ -23,7 +23,10 @@ namespace DokiDokiFightClub
         private const float _timeBetweenRounds = 5f;
 
         [SerializeField]
-        private TMP_Text _timerTextObj;
+        private TMP_Text _timerTextObj; // The UI representing the timer
+
+        [SerializeField]
+        private GameObject _matchForfeitObj; // The UI to display when a match is forfeit (disconnection)
 
         [SyncVar]
         private int _roundsPlayed = 0;      // Current number of rounds played/completed
@@ -57,6 +60,12 @@ namespace DokiDokiFightClub
         {
             if (WaitingForPlayers || _isDoingWork)
                 return;
+
+            // Check for disconnected players
+            if (Players.Count <= 1)
+            {
+                StartCoroutine(PlayerDisconnected());
+            }
 
             // Check if round ended
             if (Round.CurrentTime <= 0)
@@ -152,6 +161,33 @@ namespace DokiDokiFightClub
             Players.Clear();
         }
 
+        private IEnumerator PlayerDisconnected()
+        {
+            Round.PauseRound();
+            // Disable player controls
+            foreach (var player in Players)
+                TargetDisablePlayerControls(player.connectionToClient);
+            // Display Match Forfeit UI
+            RpcOnPlayerDisonnect();
+            // Delay to allow UI time to appear
+            yield return new WaitForSeconds(_timeBetweenRounds);
+
+            StartCoroutine(MatchEnded());
+        }
+
+        public void RemovePlayerFromMatch(Player playerToRemove)
+        {
+            for (int i = 0; i < Players.Count; ++i)
+            {
+                if (playerToRemove.Equals(Players[i]))
+                {
+                    Players.RemoveAt(i);
+                    break;
+                }
+            }
+            Debug.Log("Removed Player: " + playerToRemove);
+        }
+
         /// <summary> If the number of rounds played is odd, the player must swap spawn positions. </summary>
         private int GetPlayerSpawnIndex(int playerId)
         {
@@ -183,6 +219,18 @@ namespace DokiDokiFightClub
         private void RpcUpdateTimer(float time)
         {
             _timerTextObj.text = $"{time}";
+        }
+
+        [ClientRpc]
+        private void RpcOnPlayerDisonnect()
+        {
+            _matchForfeitObj.SetActive(true);
+        }
+
+        [TargetRpc]
+        private void TargetDisablePlayerControls(NetworkConnection conn)
+        {
+            conn.identity.GetComponent<Player>().ToggleComponents(false);
         }
 
         [TargetRpc]

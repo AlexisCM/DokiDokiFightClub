@@ -33,6 +33,11 @@ namespace DokiDokiFightClub
             IsOngoing = false;
         }
 
+        public void PauseRound()
+        {
+            StopCoroutine(nameof(StartTimer));
+        }
+
         IEnumerator StartTimer()
         {
             while (CurrentTime > 0f)

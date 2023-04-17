@@ -32,18 +32,14 @@ namespace DokiDokiFightClub
             _lastUsedMatch = 0;
         }
 
-        /// <summary>
-        /// Randomly generate an index between 0 (inclusive) and the number of players per match (exclusive).
-        /// </summary>
+        /// <summary> Randomly generate an index between 0 (inclusive) and the number of players per match (exclusive). </summary>
         /// <returns>Player's spawn index</returns>
         int GenerateSpawnIndex()
         {
             return Random.Range(0, PlayersPerMatch);
         }
 
-        /// <summary>
-        /// Returns the alternate index when the opposing player's spawn has already been assigned.
-        /// </summary>
+        /// <summary> Returns the alternate index when the opposing player's spawn has already been assigned. </summary>
         /// <param name="opposingPlayerIndex">Previously assigned spawn index of opposing player</param>
         /// <returns>This player's spawn index</returns>
         int GenerateSpawnIndex(int opposingPlayerIndex)
@@ -62,6 +58,7 @@ namespace DokiDokiFightClub
             return Matches.Count < _networkManager.MatchInstances;
         }
 
+        [ServerCallback]
         public void AddPlayerToQueue(NetworkConnectionToClient conn)
         {
             PlayerQueue.Add(conn.identity.gameObject.GetComponent<PlayerQueueIdentity>());
@@ -71,6 +68,13 @@ namespace DokiDokiFightClub
             {
                 InitiateMatch();
             }
+        }
+
+        [ServerCallback]
+        public void RemovePlayerFromQueue(PlayerQueueIdentity player)
+        {
+            PlayerQueue.Remove(player);
+            Debug.Log($"MatchMaker.RemovePlayerFromQueue. # players left: {PlayerQueue.Count}");
         }
 
         void InitiateMatch()
@@ -100,12 +104,6 @@ namespace DokiDokiFightClub
             Matches.Add(match);
             // Add players to match over the network
             _networkManager.AddPlayersToMatchScene(match);
-        }
-
-        public void RemovePlayerFromQueue(PlayerQueueIdentity player)
-        {
-            PlayerQueue.Remove(player);
-            Debug.Log($"MatchMaker.RemovePlayerFromQueue. # players left: {PlayerQueue.Count}");
         }
 
         public void RemoveMatch(int matchId)

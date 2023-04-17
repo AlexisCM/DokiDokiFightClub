@@ -157,6 +157,15 @@ namespace DokiDokiFightClub
             _networkManager.MatchManagers[MatchId].PlayerDeath(PlayerId);
         }
 
+        /// <summary> Activates/Deactivates the Components, depending on whether isActive is true/false. </summary>
+        /// <param name="isActive"></param>
+        public void ToggleComponents(bool isActive)
+        {
+            PlayerInput.enabled = isActive;
+            GetComponent<PlayerController>().enabled = isActive;
+            GetComponent<CharacterController>().enabled = isActive;
+        }
+
         void OnGUI()
         {
             if (isLocalPlayer)
@@ -166,13 +175,10 @@ namespace DokiDokiFightClub
             }
         }
 
-        /// <summary> Activates/Deactivates the Components, depending on whether isActive is true/false. </summary>
-        /// <param name="isActive"></param>
-        private void ToggleComponents(bool isActive)
+        public override string ToString()
         {
-            PlayerInput.enabled = isActive;
-            GetComponent<PlayerController>().enabled = isActive;
-            GetComponent<CharacterController>().enabled = isActive;
+            var player = $"Player#{PlayerId} in Match#{MatchId}";
+            return player;
         }
 
         #region Commands
