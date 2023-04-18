@@ -18,7 +18,7 @@ public class PlayerUiManager : MonoBehaviour
     private TMP_Text _remotePlayerScoreObject;
 
     #region Round Over Members
-    [Header("Round Over Settings")]
+    [Header("Round Over UI")]
 
     [SerializeField]
     private GameObject _roundOverObject;
@@ -29,15 +29,34 @@ public class PlayerUiManager : MonoBehaviour
     [SerializeField]
     private TMP_Text _roundOverText;
 
-    private Color32 _victoryBgColour = new(73, 188, 117, 80);
-    private Color32 _defeatBgColour = new(226, 57, 57, 80);
-    private Color32 _drawBgColour = new(70, 70, 70, 80);
-
     private readonly string _roundVictoryText = "Round Victory";
     private readonly string _roundDefeatText = "Round Defeat";
     private readonly string _roundDrawText = "Round Draw";
 
     #endregion
+
+    [Header("Game Over UI")]
+    [SerializeField]
+    private GameObject _gameOverObject;
+
+    [SerializeField]
+    private Image _gameOverBackground; // Spans the entire screen, mostly transparent
+
+    [SerializeField]
+    private Image _gameOverPanel;
+
+    [SerializeField]
+    private TMP_Text _gameOverText;
+
+    private const string _gameVictoryText = "Victory";
+    private const string _gameDefeatText = "Defeat";
+    private const string _gameDrawText = "Draw";
+
+    private Color32 _victoryBgColour = new(73, 188, 117, 100);
+    private Color32 _defeatBgColour = new(226, 57, 57, 100);
+    private Color32 _drawBgColour = new(70, 70, 70, 100);
+
+    private readonly byte _gameOverBgAlpha = 40;
 
     public void ToggleHealthMetre(bool isActive)
     {
@@ -75,6 +94,33 @@ public class PlayerUiManager : MonoBehaviour
         {
             _roundOverBackground.color = _drawBgColour;
             _roundOverText.text = _roundDrawText;
+        }
+    }
+
+    public void DisplayGameOver(bool? isWinner)
+    {
+        _gameOverObject.SetActive(true);
+
+        Color32 bgColour;
+        if (isWinner.HasValue)
+        {
+            // Update colour of panel that contains the text
+            bgColour = isWinner.Value ? _victoryBgColour : _defeatBgColour;
+            _gameOverPanel.color = bgColour;
+            // Change alpha for background image
+            bgColour.a = _gameOverBgAlpha;
+            _gameOverBackground.color = bgColour;
+            _gameOverText.text = isWinner.Value ? _gameVictoryText : _gameDefeatText;
+        }
+        else
+        {
+            // Update colour of panel that contains the text
+            bgColour = _drawBgColour;
+            _gameOverPanel.color = bgColour;
+            // Change alpha for background image
+            bgColour.a = _gameOverBgAlpha;
+            _gameOverBackground.color = bgColour;
+            _roundOverText.text = _gameDrawText;
         }
     }
 }

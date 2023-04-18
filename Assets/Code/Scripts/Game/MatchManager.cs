@@ -145,18 +145,43 @@ namespace DokiDokiFightClub
 
         private IEnumerator MatchEnded()
         {
-            // TODO: Determine the match winner
             StopAllCoroutines();
-            // TODO: Transition player to match summary scene
+            // Determine match winner
+            int? winnerId = ScoreKeeper.GetWinner();
             WaitingForPlayers = true;
             // Disconnect player clients, which will automatically send them back to the offline screen
             foreach (var player in Players)
             {
-                TargetOnMatchEnded(player.connectionToClient);
+                bool? isWinner = null;
+                if (player.PlayerId == winnerId)
+                {
+                    isWinner = true;
+                }
+                else if (player.PlayerId != winnerId && winnerId != null)
+                {
+                    isWinner = false;
+                }
+                TargetOnMatchEnded(player.connectionToClient, isWinner);
             }
 
             yield return new WaitForEndOfFrame();
 
+            Players.Clear();
+        }
+
+        /// <summary>
+        /// Reset the state of the MatchManager and display Match Forfeit UI to remaining player.
+        /// </summary>
+        /// <returns></returns>
+        private IEnumerator MatchInterrupted()
+        {
+            StopAllCoroutines();
+            WaitingForPlayers = true;
+
+            foreach (var player in Players)
+                TargetOnMatchInterrupted(player.connectionToClient);
+
+            yield return new WaitForEndOfFrame();
             Players.Clear();
         }
 
@@ -171,7 +196,7 @@ namespace DokiDokiFightClub
             // Delay to allow UI time to appear
             yield return new WaitForSeconds(_timeBetweenRounds);
 
-            StartCoroutine(MatchEnded());
+            StartCoroutine(MatchInterrupted());
         }
 
         public void RemovePlayerFromMatch(Player playerToRemove)
@@ -253,9 +278,15 @@ namespace DokiDokiFightClub
         }
 
         [TargetRpc]
-        private void TargetOnMatchEnded(NetworkConnection conn)
+        private void TargetOnMatchEnded(NetworkConnection conn, bool? isWinner)
         {
-            conn.identity.GetComponent<Player>().LeaveMatch();
+            conn.identity.GetComponent<Player>().LeaveMatch(isWinner);
+        }
+
+        [TargetRpc]
+        private void TargetOnMatchInterrupted(NetworkConnection conn)
+        {
+            conn.identity.GetComponent<Player>().MatchInterrupted();
         }
         #endregion
     }
