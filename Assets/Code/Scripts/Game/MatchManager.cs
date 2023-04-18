@@ -23,7 +23,10 @@ namespace DokiDokiFightClub
         private const float _timeBetweenRounds = 5f;
 
         [SerializeField]
-        private TMP_Text _timerTextObj;
+        private TMP_Text _timerTextObj; // The UI representing the timer
+
+        [SerializeField]
+        private GameObject _matchForfeitObj; // The UI to display when a match is forfeit (disconnection)
 
         [SyncVar]
         private int _roundsPlayed = 0;      // Current number of rounds played/completed
@@ -58,6 +61,12 @@ namespace DokiDokiFightClub
             if (WaitingForPlayers || _isDoingWork)
                 return;
 
+            // Check for disconnected players
+            if (Players.Count <= 1)
+            {
+                StartCoroutine(PlayerDisconnected());
+            }
+
             // Check if round ended
             if (Round.CurrentTime <= 0)
             {
@@ -72,7 +81,6 @@ namespace DokiDokiFightClub
             if (!Round.IsOngoing && _roundsPlayed < _maxRounds)
             {
                 // Start new round if maximum hasn't been reached
-                Debug.Log($"Rounds Played: {_roundsPlayed}");
                 Round.StartRound();
             }
             else if (!Round.IsOngoing && _roundsPlayed == _maxRounds)
@@ -84,7 +92,6 @@ namespace DokiDokiFightClub
 
         public void PlayerDeath(int deadPlayerId)
         {
-            RpcLogMessage($"<color=red>Player#{deadPlayerId} was KILLED!</color>");
             // Update player scores
             ScoreKeeper.AddScore(GetRemotePlayerId(deadPlayerId));
             StartCoroutine(RoundEnded(deadPlayerId));
@@ -95,11 +102,6 @@ namespace DokiDokiFightClub
             _isDoingWork = true;
             Round.IsOngoing = false;
             ++_roundsPlayed;
-
-            foreach (var score in _playerScoreKeeper)
-            {
-                Debug.Log($"Player: {score.Key}, Score: {score.Value}");
-            }
 
             // Display Round Over UI
             foreach (var player in Players)
@@ -136,20 +138,67 @@ namespace DokiDokiFightClub
 
         private IEnumerator MatchEnded()
         {
-            // TODO: Determine the match winner
             StopAllCoroutines();
-            // TODO: Transition player to match summary scene
+            // Determine match winner
+            int? winnerId = ScoreKeeper.GetWinner();
             WaitingForPlayers = true;
             // Disconnect player clients, which will automatically send them back to the offline screen
-            MatchMaker.Instance.RemoveMatch(MatchInstanceId);
             foreach (var player in Players)
             {
-                TargetOnMatchEnded(player.connectionToClient);
+                bool? isWinner = null;
+                if (player.PlayerId == winnerId)
+                {
+                    isWinner = true;
+                }
+                else if (player.PlayerId != winnerId && winnerId != null)
+                {
+                    isWinner = false;
+                }
+                TargetOnMatchEnded(player.connectionToClient, isWinner);
             }
 
             yield return new WaitForEndOfFrame();
 
             Players.Clear();
+        }
+
+        /// <summary> Reset the state of the MatchManager and display Match Forfeit UI to remaining player. </summary>
+        private IEnumerator MatchInterrupted()
+        {
+            StopAllCoroutines();
+            WaitingForPlayers = true;
+
+            foreach (var player in Players)
+                TargetOnMatchInterrupted(player.connectionToClient);
+
+            yield return new WaitForEndOfFrame();
+            Players.Clear();
+        }
+
+        private IEnumerator PlayerDisconnected()
+        {
+            Round.PauseRound();
+            // Disable player controls
+            foreach (var player in Players)
+                TargetDisablePlayerControls(player.connectionToClient);
+            // Display Match Forfeit UI
+            RpcOnPlayerDisonnect();
+            // Delay to allow UI time to appear
+            yield return new WaitForSeconds(_timeBetweenRounds);
+
+            StartCoroutine(MatchInterrupted());
+        }
+
+        public void RemovePlayerFromMatch(Player playerToRemove)
+        {
+            for (int i = 0; i < Players.Count; ++i)
+            {
+                if (playerToRemove.Equals(Players[i]))
+                {
+                    Players.RemoveAt(i);
+                    break;
+                }
+            }
         }
 
         /// <summary> If the number of rounds played is odd, the player must swap spawn positions. </summary>
@@ -174,21 +223,26 @@ namespace DokiDokiFightClub
 
         #region Remote Prodecure Calls
         [ClientRpc]
-        private void RpcLogMessage(string msg)
-        {
-            Debug.Log(msg);
-        }
-
-        [ClientRpc]
         private void RpcUpdateTimer(float time)
         {
             _timerTextObj.text = $"{time}";
         }
 
+        [ClientRpc]
+        private void RpcOnPlayerDisonnect()
+        {
+            _matchForfeitObj.SetActive(true);
+        }
+
+        [TargetRpc]
+        private void TargetDisablePlayerControls(NetworkConnection conn)
+        {
+            conn.identity.GetComponent<Player>().ToggleComponents(false);
+        }
+
         [TargetRpc]
         private void TargetResetPlayerState(NetworkConnection conn)
         {
-            Debug.Log($"Round ended! {_roundsPlayed} rounds played.");
             var player = conn.identity.GetComponent<Player>();
             var spawnIndex = GetPlayerSpawnIndex(player.PlayerId);
             player.ResetState(NetworkManager.startPositions[spawnIndex]);
@@ -206,9 +260,15 @@ namespace DokiDokiFightClub
         }
 
         [TargetRpc]
-        private void TargetOnMatchEnded(NetworkConnection conn)
+        private void TargetOnMatchEnded(NetworkConnection conn, bool? isWinner)
         {
-            conn.identity.GetComponent<Player>().LeaveMatch();
+            conn.identity.GetComponent<Player>().LeaveMatch(isWinner);
+        }
+
+        [TargetRpc]
+        private void TargetOnMatchInterrupted(NetworkConnection conn)
+        {
+            conn.identity.GetComponent<Player>().MatchInterrupted();
         }
         #endregion
     }

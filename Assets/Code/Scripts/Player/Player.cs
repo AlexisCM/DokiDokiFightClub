@@ -1,4 +1,5 @@
 using Mirror;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -114,6 +115,14 @@ namespace DokiDokiFightClub
         }
 
         [Client]
+        public void DisplayGameOverUi(bool? isWinner)
+        {
+            ToggleComponents(false);
+            if (isLocalPlayer)
+                PlayerUi.DisplayGameOver(isWinner);
+        }
+
+        [Client]
         public void UpdateScoreUi(uint localScore, uint remoteScore)
         {
             if (isLocalPlayer)
@@ -142,8 +151,25 @@ namespace DokiDokiFightClub
             ToggleComponents(true);
         }
 
-        /// <summary> Stops client and returns player to the OfflineScene. </summary>
-        public void LeaveMatch()
+        /// <summary> Trigger coroutine that stops the client and returns player to the OfflineScene. </summary>
+        public void LeaveMatch(bool? isWinner)
+        {
+            if (!isLocalPlayer)
+                return;
+
+            StartCoroutine(OnMatchEnded(isWinner));
+        }
+
+        private IEnumerator OnMatchEnded(bool? isWinner)
+        {
+            ToggleComponents(false);
+            DisplayGameOverUi(isWinner);
+            yield return new WaitForSeconds(5f);
+            _networkManager.StopClient();
+        }
+
+        [ClientCallback]
+        public void MatchInterrupted()
         {
             _networkManager.StopClient();
         }
@@ -157,6 +183,15 @@ namespace DokiDokiFightClub
             _networkManager.MatchManagers[MatchId].PlayerDeath(PlayerId);
         }
 
+        /// <summary> Activates/Deactivates the Components, depending on whether isActive is true/false. </summary>
+        /// <param name="isActive"></param>
+        public void ToggleComponents(bool isActive)
+        {
+            PlayerInput.enabled = isActive;
+            GetComponent<PlayerController>().enabled = isActive;
+            GetComponent<CharacterController>().enabled = isActive;
+        }
+
         void OnGUI()
         {
             if (isLocalPlayer)
@@ -166,13 +201,15 @@ namespace DokiDokiFightClub
             }
         }
 
-        /// <summary> Activates/Deactivates the Components, depending on whether isActive is true/false. </summary>
-        /// <param name="isActive"></param>
-        private void ToggleComponents(bool isActive)
+        public override string ToString()
         {
-            PlayerInput.enabled = isActive;
-            GetComponent<PlayerController>().enabled = isActive;
-            GetComponent<CharacterController>().enabled = isActive;
+            var player = $"Player#{PlayerId} in Match#{MatchId}";
+            return player;
+        }
+
+        private void OnDestroy()
+        {
+            StopAllCoroutines();
         }
 
         #region Commands

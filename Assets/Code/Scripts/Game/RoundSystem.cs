@@ -15,13 +15,13 @@ namespace DokiDokiFightClub
         }
 
         [ServerCallback]
-        public void StartRound()
+        public void StartCountdown()
         {
-            RpcStartRound();
+            RpcStartCountdown();
         }
 
         [ClientRpc]
-        private void RpcStartRound()
+        private void RpcStartCountdown()
         {
             _animator.enabled = true;
         }

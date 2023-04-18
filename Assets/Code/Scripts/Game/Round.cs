@@ -12,7 +12,7 @@ namespace DokiDokiFightClub
         [SyncVar]
         public bool IsOngoing; // Flag for if the round is still in progress
 
-        private const float _maxRoundDuration = 60f;     // Maximum duration per round in seconds
+        private const float _maxRoundDuration = 60f; // Maximum duration per round in seconds
 
         void Start()
         {
@@ -31,6 +31,11 @@ namespace DokiDokiFightClub
             StopCoroutine(nameof(StartTimer));
             CurrentTime = _maxRoundDuration;
             IsOngoing = false;
+        }
+
+        public void PauseRound()
+        {
+            StopCoroutine(nameof(StartTimer));
         }
 
         IEnumerator StartTimer()

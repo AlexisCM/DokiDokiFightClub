@@ -151,7 +151,21 @@ namespace DokiDokiFightClub
 
         public override void OnServerDisconnect(NetworkConnectionToClient conn)
         {
-            MatchMaker.Instance.RemovePlayerFromQueue(conn.identity.GetComponent<PlayerQueueIdentity>());
+            if (conn.identity.TryGetComponent(out PlayerQueueIdentity queuePlayer))
+            {
+                MatchMaker.Instance.RemovePlayerFromQueue(queuePlayer);
+            }
+
+            if (conn.identity.TryGetComponent(out Player player))
+            {
+                MatchManagers[player.MatchId].RemovePlayerFromMatch(player);
+
+                if (MatchManagers[player.MatchId].WaitingForPlayers)
+                {
+                    MatchMaker.Instance.RemoveMatch(player.MatchId);
+                }
+            }
+            
             base.OnServerDisconnect(conn);
         }
 
