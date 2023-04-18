@@ -81,7 +81,6 @@ namespace DokiDokiFightClub
             if (!Round.IsOngoing && _roundsPlayed < _maxRounds)
             {
                 // Start new round if maximum hasn't been reached
-                Debug.Log($"Rounds Played: {_roundsPlayed}");
                 Round.StartRound();
             }
             else if (!Round.IsOngoing && _roundsPlayed == _maxRounds)
@@ -93,7 +92,6 @@ namespace DokiDokiFightClub
 
         public void PlayerDeath(int deadPlayerId)
         {
-            RpcLogMessage($"<color=red>Player#{deadPlayerId} was KILLED!</color>");
             // Update player scores
             ScoreKeeper.AddScore(GetRemotePlayerId(deadPlayerId));
             StartCoroutine(RoundEnded(deadPlayerId));
@@ -104,11 +102,6 @@ namespace DokiDokiFightClub
             _isDoingWork = true;
             Round.IsOngoing = false;
             ++_roundsPlayed;
-
-            foreach (var score in _playerScoreKeeper)
-            {
-                Debug.Log($"Player: {score.Key}, Score: {score.Value}");
-            }
 
             // Display Round Over UI
             foreach (var player in Players)
@@ -169,10 +162,7 @@ namespace DokiDokiFightClub
             Players.Clear();
         }
 
-        /// <summary>
-        /// Reset the state of the MatchManager and display Match Forfeit UI to remaining player.
-        /// </summary>
-        /// <returns></returns>
+        /// <summary> Reset the state of the MatchManager and display Match Forfeit UI to remaining player. </summary>
         private IEnumerator MatchInterrupted()
         {
             StopAllCoroutines();
@@ -209,7 +199,6 @@ namespace DokiDokiFightClub
                     break;
                 }
             }
-            Debug.Log("Removed Player: " + playerToRemove);
         }
 
         /// <summary> If the number of rounds played is odd, the player must swap spawn positions. </summary>
@@ -234,12 +223,6 @@ namespace DokiDokiFightClub
 
         #region Remote Prodecure Calls
         [ClientRpc]
-        private void RpcLogMessage(string msg)
-        {
-            Debug.Log(msg);
-        }
-
-        [ClientRpc]
         private void RpcUpdateTimer(float time)
         {
             _timerTextObj.text = $"{time}";
@@ -260,7 +243,6 @@ namespace DokiDokiFightClub
         [TargetRpc]
         private void TargetResetPlayerState(NetworkConnection conn)
         {
-            Debug.Log($"Round ended! {_roundsPlayed} rounds played.");
             var player = conn.identity.GetComponent<Player>();
             var spawnIndex = GetPlayerSpawnIndex(player.PlayerId);
             player.ResetState(NetworkManager.startPositions[spawnIndex]);

@@ -35,6 +35,7 @@ public class PlayerUiManager : MonoBehaviour
 
     #endregion
 
+    #region Game Over Members
     [Header("Game Over UI")]
     [SerializeField]
     private GameObject _gameOverObject;
@@ -51,12 +52,13 @@ public class PlayerUiManager : MonoBehaviour
     private const string _gameVictoryText = "Victory";
     private const string _gameDefeatText = "Defeat";
     private const string _gameDrawText = "Draw";
+    private readonly byte _gameOverBgAlpha = 20;
+
+    #endregion
 
     private Color32 _victoryBgColour = new(73, 188, 117, 100);
     private Color32 _defeatBgColour = new(226, 57, 57, 100);
     private Color32 _drawBgColour = new(70, 70, 70, 100);
-
-    private readonly byte _gameOverBgAlpha = 40;
 
     public void ToggleHealthMetre(bool isActive)
     {

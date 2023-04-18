@@ -187,9 +187,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2037235333094164297}
-  - component: {fileID: 2037235333094164298}
   - component: {fileID: 2037235333094164299}
   - component: {fileID: 2037235333094163636}
+  - component: {fileID: 2037235333094164298}
   - component: {fileID: 7982879904192305240}
   m_Layer: 0
   m_Name: MatchManager
@@ -214,23 +214,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2037235333094164298
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2037235333094163637}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ebe63ea28c190a940bd5ca53b807195e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  syncDirection: 0
-  syncMode: 0
-  syncInterval: 0.1
-  CurrentTime: 0
-  IsOngoing: 0
 --- !u!114 &2037235333094164299
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -267,6 +250,23 @@ MonoBehaviour:
   Players: []
   _timerTextObj: {fileID: 6965595329551777826}
   _matchForfeitObj: {fileID: 5740697802040364746}
+--- !u!114 &2037235333094164298
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2037235333094163637}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ebe63ea28c190a940bd5ca53b807195e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  CurrentTime: 0
+  IsOngoing: 0
 --- !u!114 &7982879904192305240
 MonoBehaviour:
   m_ObjectHideFlags: 0
