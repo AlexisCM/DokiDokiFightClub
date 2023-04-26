@@ -101,6 +101,9 @@ public class PlayerUiManager : MonoBehaviour
 
     public void DisplayGameOver(bool? isWinner)
     {
+        // ensure round over UI is disabled
+        _roundOverObject.SetActive(false);
+        // activate game over UI before updating values
         _gameOverObject.SetActive(true);
 
         Color32 bgColour;
@@ -122,7 +125,7 @@ public class PlayerUiManager : MonoBehaviour
             // Change alpha for background image
             bgColour.a = _gameOverBgAlpha;
             _gameOverBackground.color = bgColour;
-            _roundOverText.text = _gameDrawText;
+            _gameOverText.text = _gameDrawText;
         }
     }
 }
