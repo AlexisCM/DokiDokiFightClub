@@ -8,7 +8,7 @@ namespace DokiDokiFightClub
     /// </summary>
     public class CameraController : NetworkBehaviour
     {
-        public GameObject PlayerCamera;    // Reference to player camera's game object
+        public GameObject PlayerCamera; // Reference to player camera's game object
 
         [SerializeField] private float _mouseSensitivity = 400f;
 
@@ -25,8 +25,8 @@ namespace DokiDokiFightClub
                 return;
 
             Transform mainCamera = Camera.main.gameObject.transform; // Get the scene's main camera
-                                                                     // Assign the main camera to the player's camera object
-            mainCamera.parent = PlayerCamera.transform;
+                                                                     
+            mainCamera.parent = PlayerCamera.transform; // Assign the main camera to the player's camera object
             mainCamera.SetPositionAndRotation(PlayerCamera.transform.position, PlayerCamera.transform.rotation);
         }
 
@@ -35,14 +35,16 @@ namespace DokiDokiFightClub
             if (!isLocalPlayer)
                 return;
 
+            // TODO: set PlayerCamera.transform to the height of the player's head?
+            // b/c player's head position changes based on which anim is playing
             float mouseX = Input.GetAxisRaw("Mouse X") * _mouseSensitivity * Time.deltaTime;
             float mouseY = Input.GetAxisRaw("Mouse Y") * _mouseSensitivity * Time.deltaTime;
 
             _yRotation += mouseX;
             _xRotation -= mouseY;
-            _xRotation = Mathf.Clamp(_xRotation, -90f, 90f);
+            _xRotation = Mathf.Clamp(_xRotation, -90f, 90f); // Clamp Look Up/Down
 
-            PlayerCamera.transform.rotation = Quaternion.Euler(_xRotation, _yRotation, 0);  // Rotate camera
+            PlayerCamera.transform.rotation = Quaternion.Euler(_xRotation, _yRotation, 0); // Rotate camera
             transform.rotation = Quaternion.Euler(0, _yRotation, 0); // Rotate player's body
         }
 

@@ -10,6 +10,10 @@ namespace DokiDokiFightClub
         public delegate void HealthZeroHandler();
         public event HealthZeroHandler OnHealthZero;
 
+        // Delegate to handle behaviour when health is removed
+        public delegate void HealthRemovedHandler();
+        public event HealthRemovedHandler OnHealthRemoved;
+
         private const int _maxHealth = 100;
 
         [SyncVar(hook = nameof(HandleHealthUpdated))]
@@ -53,11 +57,11 @@ namespace DokiDokiFightClub
             _healthFill.color = _damageGradient.Evaluate(1f);
         }
 
+        /// <summary>Callback to handle UI when the health value is changed.</summary>
         public void HandleHealthUpdated(int oldValue, int newValue)
         {
             if (!isLocalPlayer)
                 return;
-            // TODO: Handle health UI
             _healthSlider.value = newValue;
             _healthFill.color = _damageGradient.Evaluate(_healthSlider.normalizedValue);
         }
@@ -77,7 +81,10 @@ namespace DokiDokiFightClub
             // Ensure health cannot become negative
             value = Mathf.Max(value, 0);
             _health = Mathf.Max(_health - value, 0);
+            // Notify subscribers of removed health
+            OnHealthRemoved?.Invoke();
 
+            // Notify subscribers of "death"
             if (_health == 0)
                 OnHealthZero?.Invoke();
         }

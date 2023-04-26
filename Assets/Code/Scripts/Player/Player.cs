@@ -13,6 +13,7 @@ namespace DokiDokiFightClub
         public PlayerStats Stats;       // Player's stats for the current match (kills/deaths/damage/etc)
         public PlayerHeartbeat Heartbeat; // Handles heartbeat effect variables
         public PlayerUiManager PlayerUi;  // References to player UI objects that must be toggled/updated
+        public NetworkAnimator PlayerAnimator;  // Handles player animations on attack
 
         #region SyncVars
         [SyncVar]
@@ -24,6 +25,12 @@ namespace DokiDokiFightClub
 
         private InputMaster _playerInputActions;    // Reference to Player inputs for attacking
         private DdfcNetworkManager _networkManager; // Reference to NetworkManager's singleton instance
+        
+        // Hashes for animations names
+        private readonly int _quickAtkAnimHash = Animator.StringToHash("ATK_Quick");
+        private readonly int _heavyAtkAnimHash = Animator.StringToHash("ATK_Heavy");
+        private readonly int _deathAnimHash = Animator.StringToHash("Death");
+        private readonly int _takeDamageAnimHash = Animator.StringToHash("TakeDamage");
 
         private void Awake()
         {
@@ -42,6 +49,8 @@ namespace DokiDokiFightClub
 
             // Subscribe to the OnHealthZero event to handle player death
             Health.OnHealthZero += Die;
+            // Subscribe to the OnHealthRemoved event to handle when player takes dmg
+            Health.OnHealthRemoved += TakeDamage;
 
             // Name player objects in the hierarchy for ease of debugging
             if (isLocalPlayer)
@@ -70,13 +79,13 @@ namespace DokiDokiFightClub
 
         #region Input Action Callbacks
 
-        [Client]
         public void QuickAttack(InputAction.CallbackContext context)
         {
             if (!isLocalPlayer || !ActiveWeapon.CanAttack)
                 return;
 
-            // TODO: Play attack animation
+            // Play attack animation
+            PlayerAnimator.SetTrigger(_quickAtkAnimHash);
 
             // Check if weapon collides with an enemy
             Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
@@ -87,13 +96,14 @@ namespace DokiDokiFightClub
             }
         }
 
-        [Client]
         public void HeavyAttack(InputAction.CallbackContext context)
         {
             if (!isLocalPlayer || !ActiveWeapon.CanAttack)
                 return;
+
             // Play attack animation
-            // Check if weapon collides with an enemy
+            PlayerAnimator.SetTrigger(_heavyAtkAnimHash);
+
             // Check if weapon collides with an enemy
             Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
 
@@ -174,12 +184,19 @@ namespace DokiDokiFightClub
             _networkManager.StopClient();
         }
 
+        [ClientCallback]
+        private void TakeDamage()
+        {
+            PlayerAnimator.SetTrigger(_takeDamageAnimHash);
+        }
+
         private void Die()
         {
             // Disable player input and movement
             ToggleComponents(false);
 
             // TODO: trigger death animation
+            PlayerAnimator.SetTrigger(_deathAnimHash);
             _networkManager.MatchManagers[MatchId].PlayerDeath(PlayerId);
         }
 
@@ -187,7 +204,14 @@ namespace DokiDokiFightClub
         /// <param name="isActive"></param>
         public void ToggleComponents(bool isActive)
         {
-            PlayerInput.enabled = isActive;
+            if (isActive)
+            {
+                _playerInputActions.Enable();
+            }
+            else
+            {
+                _playerInputActions.Disable();
+            }
             GetComponent<PlayerController>().enabled = isActive;
             GetComponent<CharacterController>().enabled = isActive;
         }
